@@ -85,7 +85,7 @@ ${JSON.stringify(answers, null, 2)}`;
   return ask({ system, content: [{ type: "text", text }], effort: "low" });
 }
 
-async function judge({ person, topic, images }) {
+async function judge({ person, topic, images, prevMission }) {
   const level = person === "밍" ? "밍(민결, 2017년생 초3 겨울) — 초등 3~4학년 기준" : `${person === "펄" ? "펄(엄마)" : "울(아빠)"} — 성인 기준`;
   const system = `${TEACHER}
 
@@ -97,7 +97,15 @@ async function judge({ person, topic, images }) {
    - sentence(20): 문단(중심 문장+뒷받침 문장)과 문장이 자연스러운가
    - spelling(15): 맞춤법과 띄어쓰기
    - handwriting(15): 다른 사람이 읽기 쉬운 글씨인가. [?]가 많을수록 감점. 거의 못 읽으면 0~3점.
-3) 첨삭: 잘한 점은 구체적으로 칭찬하고, 고칠 점은 꼭 필요한 것만 짚으세요. ${person === "밍" ? "밍에게는 초3이 이해할 수 있는 다정하고 쉬운 존댓말로, 용기를 주는 말투로 쓰세요." : "어른에게는 정확하고 간결하게 쓰세요."}
+3) 첨삭 — 연구에 근거한 원칙을 반드시 지키세요.
+   ① 순서: 내용·짜임(주제, 원인-해결의 연결, 문단 구성) 같은 큰 문제를 먼저, 문장(주술 호응, 낱말 선택)을 다음, 맞춤법·띄어쓰기를 마지막에 다룹니다.
+   ② 개수 제한: 모든 오류를 고치지 마세요. 큰 고칠 점은 ${person === "밍" ? "2개" : "2~3개"}, 맞춤법·문장 교정(corrections)은 최대 ${person === "밍" ? "4개" : "5개"}만, 반복되거나 뜻을 흐리는 것 위주로 고르세요.
+   ③ 구체성: 막연한 말("더 자세히") 대신 원문을 짧게 인용하고 어디를, 왜, 어떻게 고칠지 말하세요.
+   ④ 질문으로 생각 끌어내기: comments 중 일부는 스스로 답을 찾게 하는 질문으로 쓰세요(예: "왜 그렇게 생각했는지 한 문장 더 붙이면 어떨까요?").
+   ⑤ 강점 먼저: 칭찬을 먼저, 구체적으로 하세요. 칭찬과 고칠 점의 균형을 맞추세요.
+   ⑥ 스스로 고쳐 쓰기: revision_task로 이번 글에서 한 부분을 골라 직접 다시 써 보게 하세요. 정답을 대신 써 주지 말고 방법과 힌트를 주세요.
+   ⑦ 지속성: 지난번 미션이 주어지면 이번 글에서 지켰는지 last_mission_check에 한 문장으로 확인해 주세요.
+   ${person === "밍" ? "밍에게는 초3이 이해할 수 있는 다정하고 쉬운 존댓말로, 용기를 주는 말투로 쓰세요." : "어른에게는 정확하고 간결하게, 직접적으로 쓰세요."}
 
 반드시 아래 JSON 하나만 출력하세요. 다른 말은 쓰지 마세요.
 {
@@ -109,8 +117,11 @@ async function judge({ person, topic, images }) {
   "total": 0,
   "praise": ["잘한 점 2~3개"],
   "improve": ["고칠 점 1~3개"],
-  "corrections": [{ "from": "틀린 표현", "to": "고친 표현", "why": "짧은 이유" }],
-  "rewrite_example": "글 중 한 부분을 더 좋게 고쳐 쓴 예시 1~3문장",
+  "comments": [{ "part": "intro|cause|solution|conclusion|whole", "quote": "원문에서 그대로 따온 짧은 부분(없으면 빈 문자열)", "type": "칭찬|질문|제안", "text": "여백 첨삭 메모" }],
+  "corrections": [{ "from": "원문에 실제로 있는 틀린 표현(그대로 복사)", "to": "고친 표현", "type": "맞춤법|띄어쓰기|낱말|문장", "why": "짧은 이유" }],
+  "revision_task": { "target": "다시 써 볼 원문 부분(인용)", "how": "어떻게 고쳐 쓸지", "hint": "도움이 되는 힌트나 시작 말" },
+  "last_mission_check": "지난 미션을 지켰는지 한 문장 (지난 미션이 없으면 빈 문자열)",
+  "rewrite_example": "글 중 한 부분을 더 좋게 고쳐 쓴 예시 1~3문장 (revision_task와 다른 부분)",
   "next_mission": "다음 글쓰기에서 해 볼 한 가지",
   "teacher_comment": "선생님의 한마디 (2~3문장)"
 }`;
@@ -126,6 +137,7 @@ async function judge({ person, topic, images }) {
     text: `글쓴이: ${level}
 오늘의 주제: ${topic.title}
 글쓰기 질문: ${topic.question}
+지난번 미션: ${prevMission ? String(prevMission).slice(0, 300) : "없음"}
 사진 ${content.length}장은 순서대로 이어지는 한 편의 글입니다.`,
   });
   const result = await ask({ system, content, effort: "medium" });

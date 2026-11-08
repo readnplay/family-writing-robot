@@ -82,6 +82,13 @@ nav.bottom button.on{color:var(--accent)}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .toggle{display:flex;align-items:center;gap:10px;background:var(--soft);padding:10px 12px;border-radius:12px;cursor:pointer}
 .toggle input{width:22px;height:22px}
+.cx u{text-decoration:underline wavy #e03131;text-underline-offset:3px}
+.cx sup,.cxn{color:#e03131;font-weight:700}
+.memo{background:#f3f7ff;border-radius:12px;padding:8px 12px;margin:8px 0;font-size:15px}
+.memo .q,.mission .q{color:var(--sub);font-style:italic}
+.mission{background:#e9f8ef;border-radius:12px;padding:10px 12px;margin:12px 0}
+details.fix{background:var(--soft);border-radius:12px;padding:10px 12px;margin:10px 0}
+details.fix summary{cursor:pointer;font-weight:700}
 .stbl{width:100%;border-collapse:collapse;font-size:15px;text-align:center}
 .stbl th{font-weight:400;color:var(--sub);font-size:13px;padding:4px 2px}
 .stbl td{padding:7px 2px;border-top:1px solid var(--line)}
@@ -359,24 +366,45 @@ function beginnerGuide(p, t, level) {
 }
 
 /* ===================== 결과(첨삭) ===================== */
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩";
+function markedTranscript(r) {
+  let html = esc(r.transcript || "");
+  (r.corrections || []).forEach((c, i) => {
+    const f = esc(c.from || "").trim(); if (!f) return;
+    const at = html.indexOf(f); if (at < 0) return;
+    html = html.slice(0, at) + `<span class="cx"><u>${f}</u><sup>${CIRCLED[i] || i + 1}</sup></span>` + html.slice(at + f.length);
+  });
+  return html.replace(/\[\?\]/g, "<mark>[?]</mark>");
+}
+function correctionList(r) {
+  return `<ul class="clean">${r.corrections.map((c, i) => `<li><b class="cxn">${CIRCLED[i] || i + 1}</b> <s>${esc(c.from)}</s> → <b>${esc(c.to)}</b> ${c.type ? `<span class="chip">${esc(c.type)}</span>` : ""}<span class="small muted">${esc(c.why)}</span></li>`).join("")}</ul>`;
+}
+function sortComments(list) {
+  const order = { intro: 0, cause: 1, solution: 2, conclusion: 3, whole: 4 };
+  return list.slice().sort((a, b) => (order[a.part] ?? 5) - (order[b.part] ?? 5));
+}
 function resultCard(p, e) {
   const r = e.result;
-  const tx = esc(r.transcript || "").replace(/\[\?\]/g, "<mark>[?]</mark>");
   return `<div class="card">
     <h2>👩‍🏫 ${p}의 첨삭 결과</h2>
     ${r.readable === false ? `<div class="err">글씨를 거의 읽을 수 없었어요. 글씨 점수가 크게 깎였어요. 더 또박또박, 밝은 곳에서 찍어 보세요.</div>` : ""}
     <div style="display:flex;align-items:baseline;gap:8px"><span class="total">${r.total}</span><span class="muted">/ 100점 (${p === "밍" ? "초3~4 기준" : "어른 기준"})</span></div>
     ${Object.entries(SCORE_LABELS).map(([k, [lab, max]]) => `<div class="score-row"><span>${lab}</span><div class="score-bar"><i style="width:${Math.round((r.scores?.[k] || 0) / max * 100)}%"></i></div><span class="small">${r.scores?.[k] ?? 0}/${max}</span></div>`).join("")}
     <p class="small" style="margin-top:8px">${Object.entries(PART_LABELS).map(([k, l]) => `<span class="chip ${r.parts?.[k] === "있음" ? "done" : ""}">${l}: ${esc(r.parts?.[k] || "-")}</span>`).join("")}</p>
-    <h3 style="margin-top:12px">📄 인식한 글</h3>
-    <div class="transcript">${tx || "(인식한 글 없음)"}</div>
-    ${r.unreadable_count ? `<p class="small muted">읽지 못한 곳: ${r.unreadable_count}군데 <mark>[?]</mark></p>` : ""}
+    <div class="starter" style="margin-top:12px">💬 ${esc(r.teacher_comment)}</div>
+    ${r.last_mission_check ? `<p class="small"><b>🔁 지난 미션 확인:</b> ${esc(r.last_mission_check)}</p>` : ""}
     <h3 style="margin-top:12px">👍 잘한 점</h3><ul class="clean">${(r.praise || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-    <h3>🔧 고칠 점</h3><ul class="clean">${(r.improve || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
-    ${(r.corrections || []).length ? `<h3>✏️ 맞춤법·표현 고치기</h3><ul class="clean">${r.corrections.map((c) => `<li><s>${esc(c.from)}</s> → <b>${esc(c.to)}</b> <span class="small muted">${esc(c.why)}</span></li>`).join("")}</ul>` : ""}
+    <h3 style="margin-top:12px">✍️ 첨삭지</h3>
+    <p class="small muted" style="margin:0 0 6px">물결 밑줄과 번호가 있는 곳을 다시 살펴봐요.${r.unreadable_count ? ` 읽지 못한 곳은 <mark>[?]</mark>로 표시했어요 (${r.unreadable_count}군데).` : ""}</p>
+    <div class="transcript">${markedTranscript(r) || "(인식한 글 없음)"}</div>
+    ${(r.comments || []).length ? `<h3 style="margin-top:12px">📝 선생님 메모</h3>${sortComments(r.comments).map((c) => `<div class="memo"><span class="chip">${esc(PART_LABELS[c.part] || "글 전체")}</span> ${c.type === "칭찬" ? "👍" : c.type === "질문" ? "❓" : "💡"}${c.quote ? ` <span class="q">“${esc(c.quote)}”</span>` : ""}<div>${esc(c.text)}</div></div>`).join("")}` : ""}
+    <h3 style="margin-top:12px">🔧 고칠 점 <span class="small muted">(중요한 것부터)</span></h3><ul class="clean">${(r.improve || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    ${(r.corrections || []).length ? (p === "밍"
+      ? `<details class="fix"><summary>✏️ 번호 붙은 곳을 먼저 스스로 고쳐 보고, 눌러서 정답 확인!</summary>${correctionList(r)}</details>`
+      : `<h3>✏️ 맞춤법·문장 교정</h3>${correctionList(r)}`) : ""}
+    ${r.revision_task?.how ? `<div class="mission"><b>🔄 고쳐 쓰기 미션</b>${r.revision_task.target ? `<div class="q">“${esc(r.revision_task.target)}”</div>` : ""}<div>${esc(r.revision_task.how)}</div>${r.revision_task.hint ? `<div class="small muted">💡 힌트: ${esc(r.revision_task.hint)}</div>` : ""}</div>` : ""}
     ${r.rewrite_example ? `<h3>🌟 이렇게 고쳐 쓰면 더 좋아요</h3><div class="starter">${esc(r.rewrite_example)}</div>` : ""}
-    ${r.next_mission ? `<p><b>🎯 다음 미션:</b> ${esc(r.next_mission)}</p>` : ""}
-    <div class="starter">💬 ${esc(r.teacher_comment)}</div>
+    ${r.next_mission ? `<p><b>🎯 다음 글쓰기 미션:</b> ${esc(r.next_mission)}</p>` : ""}
     ${S.session.status !== "done" ? `<div style="margin-top:12px"><button class="line block" data-redo="${p}">사진 다시 제출하기</button></div>` : ""}
   </div>`;
 }
@@ -597,7 +625,10 @@ document.addEventListener("click", async (ev) => {
   if (t.id === "submitPics") {
     const p = S.tab; const images = S.pending[p];
     return busy(`${p}의 글씨를 읽고 첨삭하는 중… (1분쯤 걸려요)`, async () => {
-      const result = await api("/api/ai", { task: "judge", person: p, topic: S.session.topic, images });
+      const prev = (await store.list()).filter((x) => x.status === "done" && x.id !== S.session.id && x.entries?.[p]?.result?.next_mission)
+        .sort((a, b) => b.createdAt - a.createdAt)[0];
+      const prevMission = prev ? prev.entries[p].result.next_mission : "";
+      const result = await api("/api/ai", { task: "judge", person: p, topic: S.session.topic, images, prevMission });
       const fresh = (await store.get(S.session.id)) || S.session; // 다른 기기에서 낸 결과 합치기
       fresh.entries = { ...fresh.entries, [p]: { result, at: Date.now() } };
       S.session = fresh; await store.save(fresh); S.pending[p] = [];

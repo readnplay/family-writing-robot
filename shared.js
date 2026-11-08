@@ -50,6 +50,7 @@ function postFromSession(s) {
         total: r.total, scores: r.scores, transcript: r.transcript || "",
         praise: r.praise || [], improve: r.improve || [], corrections: r.corrections || [],
         rewrite_example: r.rewrite_example || "", next_mission: r.next_mission || "", teacher_comment: r.teacher_comment || "",
+        comments: r.comments || [], revision_task: r.revision_task || null, last_mission_check: r.last_mission_check || "",
       };
     }),
   };
@@ -75,6 +76,7 @@ function postBodyHTML(post) {
   <p style="margin:6px 0"><b>👩‍🏫 선생님 한마디</b><br>${esc(p.teacher_comment)}</p>
   ${p.praise.length ? `<p style="margin:6px 0 0"><b>👍 잘한 점</b></p>${list(p.praise)}` : ""}
   ${p.improve.length ? `<p style="margin:6px 0 0"><b>🔧 고칠 점</b></p>${list(p.improve)}` : ""}
+  ${p.revision_task?.how ? `<p style="margin:6px 0"><b>🔄 고쳐 쓰기 미션</b> ${esc(p.revision_task.how)}</p>` : ""}
   ${p.next_mission ? `<p style="margin:6px 0"><b>🎯 다음 미션</b> ${esc(p.next_mission)}</p>` : ""}`).join("")}
 </div>`;
 }
@@ -110,7 +112,9 @@ function a5HTML(post) {
     <h4>👩‍🏫 선생님 한마디</h4><div>${esc(p.teacher_comment)}</div>
     ${p.praise.length ? `<h4>👍 잘한 점</h4>${list(p.praise)}` : ""}
     ${p.improve.length ? `<h4>🔧 고칠 점</h4>${list(p.improve)}` : ""}
-    ${p.corrections.length ? `<h4>✏️ 고쳐 쓰기</h4><ul>${p.corrections.map((c) => `<li><s>${esc(c.from)}</s> → <b>${esc(c.to)}</b></li>`).join("")}</ul>` : ""}
+    ${(p.comments || []).length ? `<h4>📝 선생님 메모</h4><ul>${p.comments.slice(0, 4).map((c) => `<li>${c.quote ? `“${esc(c.quote)}” — ` : ""}${esc(c.text)}</li>`).join("")}</ul>` : ""}
+    ${p.corrections.length ? `<h4>✏️ 맞춤법·문장 교정</h4><ul>${p.corrections.map((c) => `<li><s>${esc(c.from)}</s> → <b>${esc(c.to)}</b></li>`).join("")}</ul>` : ""}
+    ${p.revision_task?.how ? `<h4>🔄 고쳐 쓰기 미션</h4><div>${p.revision_task.target ? `“${esc(p.revision_task.target)}” → ` : ""}${esc(p.revision_task.how)}</div>` : ""}
     ${p.next_mission ? `<h4>🎯 다음 미션</h4><div>${esc(p.next_mission)}</div>` : ""}
     <div class="a5foot">${ROBOT_NAME} · ${esc(post.date)}</div>
   </section>`).join("")}</div>`;
