@@ -91,7 +91,7 @@ ul.clean{margin:6px 0;padding-left:20px}
 <div class="wrap">
   <header class="top">
     <div class="robot">🤖</div>
-    <div><h1>가족 글쓰기 로봇</h1><div class="sub">펄 · 울 · 밍의 오늘의 글쓰기</div></div>
+    <div><h1>가족 글쓰기 로봇</h1><div class="sub">울 · 펄 · 밍의 오늘의 글쓰기</div></div>
   </header>
   <div id="storeNotice"></div>
   <main id="app"></main>
@@ -106,8 +106,8 @@ ul.clean{margin:6px 0;padding-left:20px}
 <script>
 /* ===================== 기본 설정 ===================== */
 const PEOPLE = [
-  { id: "펄", role: "엄마", level: "adult" },
   { id: "울", role: "아빠", level: "adult" },
+  { id: "펄", role: "엄마", level: "adult" },
   { id: "밍", role: "민결", level: "child" },
 ];
 const MING_TARGET = 0.7; // 밍은 10번 중 7번 이상 배지
@@ -254,7 +254,6 @@ async function viewHome() {
   const all = await store.list();
   const open = all.filter((s) => s.status !== "done").sort((a, b) => b.createdAt - a.createdAt)[0];
   const done = all.filter((s) => s.status === "done");
-  const rate = mingRate(done);
   return `
   ${open ? `<div class="card"><h2>✏️ 진행 중인 글쓰기</h2>
      <p>${esc(open.date)} · ${open.topic ? `<b>${esc(open.topic.title)}</b>` : "인터뷰 중"}</p>
@@ -262,13 +261,12 @@ async function viewHome() {
      <div class="row"><button data-open="${esc(open.id)}">이어하기</button></div></div>` : ""}
   <div class="card">
     <h2>🤖 오늘의 글쓰기 시작</h2>
-    <p class="muted">로봇이 몇 가지 질문을 하면 펄, 울, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
+    <p class="muted">로봇이 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
     <button class="block" id="startNew">새 글쓰기 시작하기</button>
   </div>
   <div class="card">
     <h2>🏅 배지 현황</h2>
     <div class="row">${PEOPLE.map((p) => { const n = countBadges(done, p.id); return `<div style="text-align:center"><div class="jua p-${p.id}" style="font-size:22px">${p.id}</div><div class="small muted">${p.role}</div><div class="jua" style="font-size:20px">🥇${n.gold} 🥈${n.silver}${p.id === "밍" ? ` 🌱${n.challenge}` : ""}</div></div>`; }).join("")}</div>
-    <p class="small muted" style="margin-top:10px">밍의 최근 10번 배지 획득: <span class="rate">${rate.got}/${rate.n}</span> ${rate.n ? `(${Math.round(rate.got / rate.n * 100)}%)` : ""} · 목표 70% 이상</p>
   </div>`;
 }
 function stageText(s) {
@@ -458,8 +456,7 @@ function viewCeremony() {
 /* ===================== 배지함 / 기록 / 도움말 ===================== */
 async function viewBadges() {
   const done = (await store.list()).filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
-  const rate = mingRate(done);
-  return `<div class="card"><h2>🏅 배지 보관함</h2><p class="small muted">밍 최근 10번: <span class="rate">${rate.got}/${rate.n}</span> (목표 70% 이상)</p></div>
+  return `<div class="card"><h2>🏅 배지 보관함</h2></div>
   ${PEOPLE.map((p) => { const mine = done.filter((s) => s.awards?.[p.id]); const n = countBadges(done, p.id); return `<div class="card">
     <h3 class="p-${p.id}">${p.id} <span class="small muted">(${p.role})</span> · 🥇${n.gold} 🥈${n.silver}${n.challenge ? ` 🌱${n.challenge}` : ""}</h3>
     ${mine.length ? `<div class="grid-badges">${mine.map((s) => `<div class="b">${badgeSVG(s.topic.badge, s.awards[p.id], 86)}<div>${esc(s.topic.badge?.name)}</div><div>${esc(s.date.slice(5))}</div></div>`).join("")}</div>` : `<p class="muted small">아직 배지가 없어요. 첫 배지에 도전!</p>`}
@@ -486,7 +483,7 @@ function viewHelp() {
     <h3>점수표 (100점)</h3>
     <p class="small">짜임 25 · 내용 25 · 문단·문장 20 · 맞춤법 15 · 글씨 15<br>밍은 초등 3~4학년 기준, 펄과 울은 어른 기준으로 각자 채점해서 순위를 정해요.</p>
     <h3>배지 규칙</h3>
-    <p class="small">1등 🥇, 2등 🥈 배지는 그날 주제에 맞춘 하나뿐인 디자인이에요. 밍은 3등이어도 자기 기준 60점 이상이면 🌱 도전 배지를 받고, 최근 10번 중 7번 이상은 꼭 배지를 받을 수 있게 되어 있어요.</p>
+    <p class="small">1등 🥇, 2등 🥈 배지는 그날 주제에 맞춘 하나뿐인 디자인이에요. 밍은 3등이어도 열심히 도전하면 🌱 도전 배지를 받을 수 있어요.</p>
   </div>
   <div class="card"><h3>⚙️ 설정</h3><p class="small muted">저장소: ${remoteStore ? "가족 공용(모든 기기에서 같이 보임)" : "이 기기만"}</p><button class="line" id="logout">가족 코드 다시 넣기</button></div>`;
 }
