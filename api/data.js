@@ -41,6 +41,13 @@ export default async function handler(req, res) {
       await redis.hdel("fwr:posts", id);
       return res.json({ configured: true, ok: true });
     }
+    if (action === "meta-get") {
+      return res.json({ configured: true, meta: (await redis.get("fwr:meta")) || {} });
+    }
+    if (action === "meta-set") {
+      await redis.set("fwr:meta", req.body.meta || {});
+      return res.json({ configured: true, ok: true });
+    }
     if (action === "delete") {
       await redis.hdel(KEY, id);
       return res.json({ configured: true, ok: true });

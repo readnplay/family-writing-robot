@@ -82,6 +82,16 @@ nav.bottom button.on{color:var(--accent)}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .toggle{display:flex;align-items:center;gap:10px;background:var(--soft);padding:10px 12px;border-radius:12px;cursor:pointer}
 .toggle input{width:22px;height:22px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{background:#fff;color:var(--ink);border:2px solid var(--line);font-family:"Gowun Dodum",sans-serif;font-size:16px;padding:8px 12px;min-height:42px;border-radius:999px;flex:0 0 auto}
+.opt.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.who{background:var(--soft);border-radius:12px;padding:8px 12px;font-size:15px;margin:4px 0 2px}
+.event{background:linear-gradient(90deg,#fff3bf,#ffe8cc);border:2px solid #ffd43b;border-radius:14px;padding:10px 12px;margin:0 0 12px;font-size:15px}
+.season-bar{display:flex;gap:4px;margin:0 0 12px}
+.season-bar span{flex:1;height:10px;border-radius:6px;background:var(--line)}
+.season-bar span.on{background:var(--gold)}
+.srow{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.wishbtn{background:#c77dff;font-size:14px;min-height:32px;padding:4px 10px;border-radius:999px;margin:2px 0}
 .cx u{text-decoration:underline wavy #e03131;text-underline-offset:3px}
 .cx sup,.cxn{color:#e03131;font-weight:700}
 .memo{background:#f3f7ff;border-radius:12px;padding:8px 12px;margin:8px 0;font-size:15px}
@@ -124,14 +134,44 @@ const PEOPLE = [
   { id: "펄", role: "엄마", level: "adult" },
   { id: "밍", role: "민결", level: "child" },
 ];
-const MING_TARGET = 0.7;
+/* 시즌 규칙 */
+const SEASON_GAMES = 10;            // 한 시즌 = 글쓰기 10편
+const WISH_POINTS = 20;             // 20점마다 소원 1개
+const MEDAL_POINTS = { gold: 3, silver: 2, bronze: 1 };
+const MEDAL_ICON = { gold: "🥇", silver: "🥈", bronze: "🥉" };
+const MEDAL_NAME = { gold: "금메달", silver: "은메달", bronze: "동메달" };
 const SCORE_LABELS = { structure: ["짜임", 25], content: ["내용", 25], sentence: ["문단·문장", 20], spelling: ["맞춤법", 15], handwriting: ["글씨", 15] };
 const PART_LABELS = { intro: "서론", cause: "본론① 원인", solution: "본론② 해결", conclusion: "결론" };
 
-const FIXED_Q = [
-  { k: "weather", q: "오늘 날씨는 어땠나요? 날씨 때문에 생긴 일이 있었나요?" },
-  { k: "mood", q: "오늘 기분은 어때요? 왜 그런 기분이 들었나요?" },
+/* 객관식 질문 (날씨·기분 + 매번 다른 3개) */
+const MC_FIXED = [
+  { q: "오늘 날씨는 어땠나요?", o: ["☀️ 맑음", "☁️ 흐림", "🌧️ 비", "❄️ 눈", "🥶 아주 추움"] },
+  { q: "지금 기분은 어때요?", o: ["😄 아주 좋아요", "🙂 좋아요", "😐 그저 그래요", "😢 슬퍼요", "😠 화나요"] },
 ];
+const MC_POOL = [
+  { q: "오늘 가장 힘들었던 시간은?", o: ["🌅 아침", "🏫 학교·회사", "🍽️ 밥 먹을 때", "📺 노는 시간", "🛏️ 잘 때"] },
+  { q: "요즘 가장 관심 있는 것은?", o: ["🎮 게임", "📚 책", "⚽ 운동", "🎨 그리기·만들기", "🐶 동물"] },
+  { q: "요즘 다툼이 생기는 가장 큰 이유는?", o: ["📱 휴대폰·TV", "🧸 장난감·물건", "🍬 간식", "🧹 정리·청소", "⏰ 시간 약속"] },
+  { q: "고치고 싶은 습관은?", o: ["⏰ 늦잠", "📱 화면 오래 보기", "🧦 정리 안 하기", "🥦 편식", "😤 짜증 내기"] },
+  { q: "우리 집에서 가장 바뀌었으면 하는 것은?", o: ["🧹 깨끗한 방", "🗣️ 대화 시간", "🎲 함께 노는 시간", "🍳 아침 식사", "🔇 조용한 시간"] },
+  { q: "요즘 가장 부족하다고 느끼는 것은?", o: ["😴 잠", "⏳ 시간", "💪 운동", "📖 책 읽기", "🤗 가족과의 시간"] },
+  { q: "이번 주 가장 기억에 남는 장소는?", o: ["🏠 집", "🏫 학교·회사", "🏞️ 공원·놀이터", "🛒 마트·가게", "🚗 차 안"] },
+  { q: "겨울에 가장 불편한 점은?", o: ["🥶 추위", "🤧 감기", "🌑 일찍 어두워짐", "🧤 옷 챙기기", "🏃 밖에서 못 놂"] },
+  { q: "요즘 가장 많이 느낀 감정은?", o: ["😊 뿌듯함", "😟 걱정", "😤 답답함", "🥰 고마움", "😲 놀람"] },
+  { q: "친구·동료와 요즘 있었던 일은?", o: ["🤝 서로 도왔다", "😠 다퉜다", "🎁 선물을 주고받았다", "😂 크게 웃었다", "🙅 별일 없었다"] },
+  { q: "동네나 세상에서 본 문제는?", o: ["🗑️ 쓰레기", "🚸 교통 안전", "🐕 반려동물", "🔊 소음", "🌍 환경·날씨"] },
+  { q: "용돈이나 돈에 대해 드는 생각은?", o: ["💰 모으고 싶다", "🛍️ 사고 싶은 게 있다", "🤔 어디에 쓸지 고민", "🎁 선물하고 싶다", "😐 관심 없다"] },
+  { q: "요즘 하기 싫은 일은?", o: ["📝 숙제·일", "🧹 청소", "🛁 씻기", "🥱 일찍 일어나기", "🦷 양치"] },
+  { q: "하루에 화면(휴대폰·TV) 보는 시간은?", o: ["⏱️ 30분 이하", "🕐 1시간쯤", "🕑 2시간쯤", "🕒 3시간 넘게", "🤷 잘 모르겠다"] },
+  { q: "요즘 새로 배우고 싶은 것은?", o: ["🎹 악기", "🌐 외국어", "💻 코딩", "🏊 운동", "🍳 요리"] },
+  { q: "잠들기 전에 주로 하는 일은?", o: ["📖 책 읽기", "📱 휴대폰", "💬 가족과 이야기", "🎧 음악 듣기", "😴 바로 잔다"] },
+  { q: "요즘 가장 고마운 사람은?", o: ["👨 아빠", "👩 엄마", "🧒 민결", "👫 친구", "👩‍🏫 선생님·동료"] },
+  { q: "아침에 가장 바쁜 일은?", o: ["👕 옷 입기", "🍞 아침 먹기", "🎒 가방 챙기기", "🪥 씻기", "😴 일어나기"] },
+  { q: "요즘 밥 먹을 때 어떤가요?", o: ["😋 맛있게 잘 먹는다", "📺 TV 보며 먹는다", "🐢 천천히 먹는다", "🥦 남기는 게 있다", "🗣️ 이야기하며 먹는다"] },
+  { q: "주말에 가장 하고 싶은 것은?", o: ["🏞️ 나들이", "🎬 영화 보기", "🛌 푹 쉬기", "🎮 놀기", "🍰 맛있는 것 먹기"] },
+];
+/* 주관식 질문 (매번 다른 1개 + 자유 이야기) */
+const TEXT_FREE = "그 밖에 오늘 하고 싶은 이야기가 있나요? (자유롭게)";
 const POOL_Q = [
   "요즘 가장 관심 있는 것은 무엇인가요?",
   "요즘 불편하거나 속상했던 일이 있었나요?",
@@ -210,10 +250,94 @@ let S = { view: "home", session: null, tab: "밍", busy: false, err: "" };
 function setErr(m) { S.err = m || ""; }
 function errBox() { return S.err ? `<div class="err">${esc(S.err)}</div>` : ""; }
 
-function newSession() {
-  const date = todayStr();
-  const qs = [...FIXED_Q, ...seededPick(POOL_Q, 3, date + Math.random()).map((q, i) => ({ k: "p" + i, q }))];
-  return { id: date + "-" + Math.random().toString(36).slice(2, 7), date, status: "interview", questions: qs, answers: {}, topic: null, entries: {}, awards: null, createdAt: Date.now() };
+function newSession(info) {
+  const date = todayStr(); const seed = date + Math.random();
+  const mc = [...MC_FIXED, ...seededPick(MC_POOL, 3, seed)].map((x, i) => ({ k: "m" + i, type: "mc", q: x.q, o: x.o }));
+  const tx = [{ k: "t0", type: "text", q: seededPick(POOL_Q, 1, seed + "t")[0] }, { k: "t1", type: "text", q: TEXT_FREE }];
+  return {
+    id: date + "-" + Math.random().toString(36).slice(2, 7), date, status: "interview", questions: [...mc, ...tx],
+    answers: {}, topic: null, entries: {}, awards: null, event: rollEvent(info), createdAt: Date.now(),
+  };
+}
+const hasAnswer = (s, id) => Object.values(s.answers?.[id] || {}).some((v) => v && String(v).trim());
+
+/* ===================== 시즌 ===================== */
+function seasonSessions(all) {
+  return all.filter((s) => s.status === "done" && s.season).sort((a, b) => a.createdAt - b.createdAt);
+}
+function standings(games) {
+  const points = {}, medals = {};
+  PEOPLE.forEach((p) => { points[p.id] = 0; medals[p.id] = { gold: 0, silver: 0, bronze: 0 }; });
+  games.forEach((s) => PEOPLE.forEach((p) => {
+    points[p.id] += s.points?.[p.id] || 0;
+    const m = s.medals?.[p.id]; if (m) medals[p.id][m]++;
+  }));
+  return { points, medals };
+}
+function seasonInfo(all) {
+  const done = seasonSessions(all);
+  const last = done.length ? Math.max(...done.map((s) => s.season)) : 1;
+  const lastGames = done.filter((s) => s.season === last).length;
+  const season = lastGames >= SEASON_GAMES ? last + 1 : last;
+  const games = done.filter((s) => s.season === season);
+  return { season, played: games.length, remaining: SEASON_GAMES - games.length, games, ...standings(games) };
+}
+function trophies(all) {
+  const done = seasonSessions(all); const list = [];
+  const seasons = [...new Set(done.map((s) => s.season))].sort((a, b) => a - b);
+  seasons.forEach((n) => {
+    const games = done.filter((s) => s.season === n);
+    if (games.length < SEASON_GAMES) return;
+    const { points } = standings(games);
+    const top = Math.max(...Object.values(points));
+    list.push({ season: n, winners: PEOPLE.filter((p) => points[p.id] === top).map((p) => p.id), points });
+  });
+  return list;
+}
+/* 뒤처진 사람이 20점에 못 미칠 것 같으면 가끔 2배·3배 경기 */
+function rollEvent(info) {
+  if (!info || info.played < 3 || info.remaining <= 0) return null;
+  const r = info.remaining;
+  const behind = PEOPLE.some((p) => info.points[p.id] + r * 2 < WISH_POINTS);
+  if (!behind) return null;
+  const hopeless = PEOPLE.some((p) => info.points[p.id] + r * 3 < WISH_POINTS);
+  if (Math.random() >= (hopeless ? 0.6 : 0.35)) return null;
+  return { mult: hopeless && Math.random() < 0.6 ? 3 : 2 };
+}
+function eventBanner(s) {
+  if (!s.event?.mult) return "";
+  return `<div class="event">🎉 오늘은 <b>${s.event.mult}배 점수 경기!</b> 메달 점수가 ${s.event.mult}배가 돼요 (금 ${3 * s.event.mult} · 은 ${2 * s.event.mult} · 동 ${s.event.mult}점)</div>`;
+}
+
+/* 소원권 사용 기록 (가족 공용) */
+const meta = {
+  async get() {
+    if (remoteStore) { const d = await api("/api/data", { action: "meta-get" }); return d.meta || {}; }
+    return ls.get("fwr_meta", {});
+  },
+  async set(m) {
+    if (remoteStore) return api("/api/data", { action: "meta-set", meta: m });
+    ls.set("fwr_meta", m);
+  },
+};
+/* 모든 시즌에서 받은 소원권 (사용 전/후) */
+function allWishes(all, m) {
+  const done = seasonSessions(all); const out = [];
+  [...new Set(done.map((s) => s.season))].sort((a, b) => a - b).forEach((n) => {
+    const { points } = standings(done.filter((s) => s.season === n));
+    PEOPLE.forEach((p) => {
+      for (let i = 0; i < Math.floor(points[p.id] / WISH_POINTS); i++) out.push({ season: n, id: p.id, i, used: m.wishes?.[`${n}-${p.id}-${i}`] || null });
+    });
+  });
+  return out;
+}
+function wishCards(info, m) {
+  return PEOPLE.map((p) => {
+    const pts = info.points[p.id]; const earned = Math.floor(pts / WISH_POINTS);
+    const used = Array.from({ length: earned }, (_, i) => m.wishes?.[`${info.season}-${p.id}-${i}`]);
+    const toNext = WISH_POINTS - (pts % WISH_POINTS);
+    return { p, pts, earned, used, toNext };
+  });
 }
 
 /* ===================== 화면: 가족 코드 ===================== */
@@ -240,22 +364,37 @@ function renderNotice() {
 async function viewHome() {
   const all = await store.list();
   const open = all.filter((s) => s.status !== "done").sort((a, b) => b.createdAt - a.createdAt)[0];
-  const done = all.filter((s) => s.status === "done");
+  const info = seasonInfo(all); const m = await meta.get();
+  const tro = trophies(all); const lastTrophy = tro[tro.length - 1];
+  const rows = wishCards(info, m);
+  const unused = allWishes(all, m).filter((w) => !w.used);
   return `
+  ${unused.length ? `<div class="card"><h2>🧞 소원권</h2><p class="small muted">${WISH_POINTS}점을 모아 받은 소원권이에요. 소원을 적으면 사용 완료!</p>
+    ${unused.map((w) => `<button class="wishbtn" data-wish="${w.season}-${w.id}-${w.i}">🧞 ${w.id} · 시즌 ${w.season} 소원 쓰기</button>`).join(" ")}</div>` : ""}
+  ${lastTrophy && info.played === 0 ? `<div class="card" style="text-align:center"><div style="font-size:54px">🏆</div><h2>시즌 ${lastTrophy.season} 우승: ${lastTrophy.winners.join(", ")}!</h2><p class="small muted">새 시즌 ${info.season}이 시작돼요. 다시 0점부터!</p></div>` : ""}
   ${open ? `<div class="card"><h2>✏️ 진행 중인 글쓰기</h2>
+     ${eventBanner(open)}
      <p>${esc(open.date)} · ${open.topic ? `<b>${esc(open.topic.title)}</b>` : "인터뷰 중"}</p>
      <p class="small muted">${stageText(open)}</p>
      <div class="row"><button data-open="${esc(open.id)}">이어하기</button><button class="line" data-del="${esc(open.id)}" data-inprogress="1">🗑️ 삭제</button></div></div>` : ""}
   <div class="card">
     <h2>🤖 또박이와 글쓰기 시작</h2>
-    <p class="muted">또박이가 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
-    <button class="block" id="startNew">새 글쓰기 시작하기</button>
+    <p class="muted">또박이가 몇 가지 질문을 하면 답해 주세요. 한 명만 답해도, 몇 개만 답해도 괜찮아요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
+    ${open ? "" : `<button class="block" id="startNew">새 글쓰기 시작하기</button>`}
+    ${open ? `<p class="small muted">진행 중인 글쓰기를 끝내거나 삭제하면 새로 시작할 수 있어요.</p>` : ""}
   </div>
   <div class="card">
-    <h2>🏅 배지 · 점수 현황</h2>
-    <div class="row" style="flex-wrap:nowrap;gap:6px">${PEOPLE.map((p) => { const n = countBadges(done, p.id); const st = scoreStats(done, p.id); return `<div style="text-align:center;flex:1 1 0;min-width:0"><div class="jua p-${p.id}" style="font-size:22px">${p.id}</div><div class="small muted">${p.role}</div><div class="jua" style="font-size:17px;white-space:nowrap">🥇${n.gold} 🥈${n.silver}${p.id === "밍" ? ` 🌱${n.challenge}` : ""}</div>
-      <div class="small">누적 <b>${st.sum}</b>점<br>평균 <b>${st.avg}</b>점</div></div>`; }).join("")}</div>
-    <div style="margin-top:12px"><button class="ghost block" data-go="scores">📊 점수 자세히 보기</button></div>
+    <h2>🏆 시즌 ${info.season} <span class="small muted">· ${info.played}/${SEASON_GAMES}편</span></h2>
+    <div class="season-bar">${Array.from({ length: SEASON_GAMES }, (_, i) => `<span class="${i < info.played ? "on" : ""}"></span>`).join("")}</div>
+    ${rows.map(({ p, pts, earned, used, toNext }) => `<div class="srow">
+      <div class="jua p-${p.id}" style="font-size:22px;width:34px">${p.id}</div>
+      <div style="flex:1;min-width:0">
+        <div class="small"><b class="jua" style="font-size:19px">${pts}점</b> · 🥇${info.medals[p.id].gold} 🥈${info.medals[p.id].silver} 🥉${info.medals[p.id].bronze}</div>
+        <div class="score-bar" style="margin:4px 0"><i style="width:${Math.min(100, Math.round(((pts % WISH_POINTS) || (earned ? WISH_POINTS : 0)) / WISH_POINTS * 100))}%;background:#c77dff"></i></div>
+        <div class="small muted">${earned ? `🧞 소원권 ${earned}장 · ` : ""}다음 소원까지 ${toNext}점</div>
+      </div></div>`).join("")}
+    <p class="small muted" style="margin:8px 0 0">금 3점 · 은 2점 · 동 1점 · ${WISH_POINTS}점마다 소원 1개 · 시즌 1등은 🏆 트로피</p>
+    <div style="margin-top:10px" class="row"><button class="ghost" data-go="badges">🏅 배지·트로피</button><button class="ghost" data-go="scores">📊 글 점수</button></div>
   </div>`;
 }
 function stageText(s) {
@@ -268,13 +407,17 @@ function stageText(s) {
 function viewInterview() {
   const s = S.session; const p = S.tab;
   const a = s.answers[p] || {};
-  const doneCount = PEOPLE.filter((x) => Object.values(s.answers[x.id] || {}).some((v) => v && v.trim())).length;
+  const doneCount = PEOPLE.filter((x) => hasAnswer(s, x.id)).length;
   return `<div class="steps"><span class="on"></span><span></span><span></span><span></span></div>
+  ${eventBanner(s)}
   <div class="card">
     <h2>🎤 오늘의 인터뷰</h2>
-    <p class="small muted">한 사람씩 이름을 누르고 답해 주세요. 짧게 써도 괜찮아요. (휴대폰 키보드의 🎤 버튼으로 말로 입력해도 돼요)</p>
-    <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === p ? "on" : ""}" data-tab="${x.id}">${x.id}${Object.values(s.answers[x.id] || {}).some((v) => v && v.trim()) ? " ✓" : ""}</div>`).join("")}</div>
-    ${s.questions.map((q, i) => `<label class="q">${i + 1}. ${esc(q.q)}</label><textarea data-ans="${esc(q.k)}" placeholder="${p}의 대답">${esc(a[q.k] || "")}</textarea>`).join("")}
+    <p class="small muted">먼저 누가 답하는지 이름을 고르세요. 모든 질문에 답하지 않아도 돼요. 고른 답을 다시 누르면 취소돼요.</p>
+    <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === p ? "on" : ""}" data-tab="${x.id}">${x.id}${hasAnswer(s, x.id) ? " ✓" : ""}</div>`).join("")}</div>
+    <div class="who p-${p}">지금 <b>${p}</b>(${PEOPLE.find((x) => x.id === p).role})의 답을 받고 있어요</div>
+    ${s.questions.map((q, i) => q.type === "mc"
+      ? `<label class="q">${i + 1}. ${esc(q.q)}</label><div class="opts">${q.o.map((o) => `<button class="opt ${a[q.k] === o ? "on" : ""}" data-mc="${esc(q.k)}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>`
+      : `<label class="q">${i + 1}. ${esc(q.q)} <span class="small muted">(주관식)</span></label><textarea data-ans="${esc(q.k)}" placeholder="${p}의 대답 (안 써도 돼요)">${esc(a[q.k] || "")}</textarea>`).join("")}
   </div>
   ${errBox()}
   <div class="card">
@@ -284,7 +427,7 @@ function viewInterview() {
 }
 function collectAnswers() {
   const s = S.session; const p = S.tab; s.answers[p] = s.answers[p] || {};
-  document.querySelectorAll("[data-ans]").forEach((t) => { s.answers[p][t.dataset.ans] = t.value; });
+  document.querySelectorAll("textarea[data-ans]").forEach((t) => { s.answers[p][t.dataset.ans] = t.value; });
 }
 
 /* ===================== 화면: 주제 + 쓰기 안내 ===================== */
@@ -297,7 +440,7 @@ function topicCard(t) {
     <div class="starter">🧒 밍에게: ${esc(t.kid_explain)}</div>
     <p class="small muted">💡 ${esc(t.from_answers)}</p>
     ${t.words?.length ? `<p class="small">쓰면 좋은 낱말: ${t.words.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</p>` : ""}
-    <div class="badge-wrap" style="margin-top:8px">${badgeSVG(t.badge, null, 92)}<div><div class="small muted">오늘만의 배지</div><div class="jua" style="font-size:21px">${esc(t.badge?.name)}</div><div class="small">“${esc(t.badge?.motto)}”</div></div></div>
+    <div class="badge-wrap" style="margin-top:8px">${badgeSVG(t.badge, null, 92)}<div><div class="small muted">오늘의 배지 · 🥇 금메달만 받아요</div><div class="jua" style="font-size:21px">${esc(t.badge?.name)}</div><div class="small">“${esc(t.badge?.motto)}”</div></div></div>
   </div>`;
 }
 function viewWriting() {
@@ -306,6 +449,7 @@ function viewWriting() {
   const beginner = ls.get("fwr_beginner_" + p, p === "밍");
   const e = s.entries[p] || {};
   return `<div class="steps"><span class="on"></span><span class="on"></span><span class="${e.result ? "on" : ""}"></span><span></span></div>
+  ${eventBanner(s)}
   ${topicCard(t)}
   <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === p ? "on" : ""}" data-tab="${x.id}">${x.id}${s.entries[x.id]?.result ? " ✓" : ""}</div>`).join("")}</div>
   ${e.result ? resultCard(p, e) : `
@@ -410,10 +554,6 @@ function resultCard(p, e) {
 }
 
 /* ===================== 시상 ===================== */
-function mingRate(doneSessions, limit = 10) {
-  const list = doneSessions.filter((s) => s.awards && s.entries?.["밍"]?.result).sort((a, b) => a.createdAt - b.createdAt).slice(-limit);
-  return { n: list.length, got: list.filter((s) => s.awards["밍"]).length };
-}
 function scoreStats(done, id) {
   const list = done.filter((s) => s.entries?.[id]?.result).sort((a, b) => (a.date || "").localeCompare(b.date || "") || a.createdAt - b.createdAt);
   const totals = list.map((s) => s.entries[id].result.total || 0);
@@ -425,49 +565,58 @@ function scoreStats(done, id) {
   return { n: list.length, sum, avg: list.length ? Math.round((sum / list.length) * 10) / 10 : 0, best: totals.length ? Math.max(...totals) : 0, list, cat };
 }
 function countBadges(done, id) {
-  const n = { gold: 0, silver: 0, challenge: 0 };
-  done.forEach((s) => { const a = s.awards?.[id]; if (a) n[a]++; });
+  const n = { gold: 0, silver: 0, bronze: 0, badges: 0 };
+  done.forEach((s) => { const m = s.medals?.[id]; if (m) n[m]++; if (s.awards?.[id] === "gold") n.badges++; });
   return n;
 }
-function computeAwards(session, pastDone) {
+/* 점수 순위 → 금·은·동 메달, 배지는 금메달만, 시즌 점수 = 메달 점수 × 이벤트 배수 */
+function computeMedals(session) {
   const ranked = PEOPLE.filter((p) => session.entries[p.id]?.result)
     .map((p) => ({ id: p.id, score: session.entries[p.id].result.total, hw: session.entries[p.id].result.scores?.handwriting || 0 }))
     .sort((a, b) => b.score - a.score || b.hw - a.hw || (a.id === "밍" ? -1 : 1));
-  const awards = {}; const notes = {};
+  const order = ["gold", "silver", "bronze"]; const mult = session.event?.mult || 1;
+  const medals = {}, points = {}, awards = {};
+  ranked.forEach((r, i) => { medals[r.id] = order[i]; points[r.id] = MEDAL_POINTS[order[i]] * mult; });
   if (ranked[0]) awards[ranked[0].id] = "gold";
-  if (ranked[1]) awards[ranked[1].id] = "silver";
-  // 도전 배지 규칙
-  const m = ranked.find((r) => r.id === "밍");
-  if (m && !awards["밍"]) {
-    const prev = mingRate(pastDone, 9);
-    const needed = prev.got < Math.ceil(MING_TARGET * Math.min(10, prev.n + 1));
-    if (m.score >= 60 || needed) { awards["밍"] = "challenge"; notes["밍"] = m.score >= 60 ? "자기 기준 60점 이상! 도전 배지" : "꾸준히 도전한 밍에게 도전 배지"; }
-  }
-  return { awards, ranked, notes };
+  return { ranked, medals, points, awards };
+}
+function seasonResultCard(sr) {
+  return `<div class="card" style="text-align:center">
+    ${sr.complete ? `<div style="font-size:64px">🏆</div><h2>시즌 ${sr.season} 끝! 우승: ${sr.winners.join(", ")}</h2><p class="small muted">우승 트로피는 배지함에 보관돼요. 다음 글쓰기부터 시즌 ${sr.season + 1}이 시작돼요.</p>`
+      : `<h3>🏆 시즌 ${sr.season} 현황 · ${sr.played}/${SEASON_GAMES}편</h3>`}
+    <table class="stbl"><thead><tr><th></th><th>시즌 점수</th><th>🥇</th><th>🥈</th><th>🥉</th></tr></thead><tbody>
+    ${PEOPLE.slice().sort((a, b) => sr.points[b.id] - sr.points[a.id]).map((p) => `<tr><td class="jua p-${p.id}">${p.id}${sr.complete && sr.winners.includes(p.id) ? " 🏆" : ""}</td><td><b>${sr.points[p.id]}</b>점</td><td>${sr.medals[p.id].gold}</td><td>${sr.medals[p.id].silver}</td><td>${sr.medals[p.id].bronze}</td></tr>`).join("")}
+    </tbody></table>
+    ${sr.newWishes.map((id) => `<div class="event" style="margin-top:10px">🧞 <b>${id}</b> ${WISH_POINTS}점 달성! 소원 하나를 이룰 수 있어요! (홈에서 소원을 적어요)</div>`).join("")}
+  </div>`;
 }
 function awardBox(s) {
   const n = PEOPLE.filter((p) => s.entries[p.id]?.result).length;
   if (s.status === "done") return "";
   return `<div class="card"><h2>🏆 시상식</h2>
     <p class="small muted">제출: ${PEOPLE.map((p) => `<span class="chip ${s.entries[p.id]?.result ? "done" : ""}">${p.id}${s.entries[p.id]?.result ? " ✓" : ""}</span>`).join("")}</p>
-    <p class="small muted">${n < 3 ? "세 사람이 모두 제출하면 시상식을 열 수 있어요. (2명만 했어도 열 수 있지만, 안 낸 사람은 배지가 없어요)" : "모두 제출했어요! 두근두근 🥁"}</p>
+    <p class="small muted">${n < 3 ? "2명 이상 제출하면 시상식을 열 수 있어요. 안 낸 사람은 메달과 점수가 없어요." : "모두 제출했어요! 두근두근 🥁"}</p>
     <button class="block" id="ceremony" ${n >= 2 ? "" : "disabled"}>🎉 시상식 열기</button></div>`;
 }
 function viewCeremony() {
   const s = S.session; const r = s.ranking || [];
   const order = [r[1], r[0], r[2]].filter(Boolean);
-  const h = { gold: 120, silver: 90, none: 60 };
+  const hgt = [120, 90, 60]; const col = ["var(--gold)", "var(--silver)", "#cd8b55"];
+  const mult = s.event?.mult || 1;
+  const sr = S.seasonResult; // 이번 시상식 직후의 시즌 현황 (있으면)
   return `<div class="steps"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
   <div class="card" style="text-align:center">
-    <div class="small muted">${esc(s.date)} · ${esc(s.topic.title)}</div>
+    <div class="small muted">${esc(s.date)} · 시즌 ${s.season || "-"} 제${s.game || "-"}편 · ${esc(s.topic.title)}</div>
     <h2>🎉 오늘의 시상식</h2>
-    <div class="podium">${order.map((x) => { const a = s.awards[x.id]; const place = r.indexOf(x); const col = place === 0 ? "var(--gold)" : place === 1 ? "var(--silver)" : "#d9cbb8"; return `<div class="pl">
-      ${a ? badgeSVG(s.topic.badge, a, 84) : `<div style="font-size:40px">💪</div>`}
+    ${eventBanner(s)}
+    <div class="podium">${order.map((x) => { const place = r.indexOf(x); const m = s.medals?.[x.id]; return `<div class="pl">
+      ${s.awards?.[x.id] === "gold" ? badgeSVG(s.topic.badge, "gold", 84) : `<div style="font-size:46px">${MEDAL_ICON[m] || "💪"}</div>`}
       <div class="jua p-${x.id}" style="font-size:22px">${x.id}</div><div class="small">${x.score}점</div>
-      <div class="stand" style="background:${col};height:${place === 0 ? h.gold : place === 1 ? h.silver : h.none}px">${place + 1}등</div></div>`; }).join("")}</div>
-    ${Object.entries(s.awardNotes || {}).map(([k, v]) => `<div class="starter">🌱 ${esc(k)}: ${esc(v)}</div>`).join("")}
-    ${r.filter((x) => !s.awards[x.id]).map((x) => `<p class="small muted">${x.id}, 다음엔 꼭 배지를! 오늘도 끝까지 쓴 것이 멋져요.</p>`).join("")}
+      <div class="small"><b>+${s.points?.[x.id] || 0}</b> 시즌점수${mult > 1 ? ` (${mult}배)` : ""}</div>
+      <div class="stand" style="background:${col[place]};height:${hgt[place]}px">${MEDAL_ICON[m] || ""}<br>${place + 1}등</div></div>`; }).join("")}</div>
+    ${r[0] ? `<div class="starter">🏅 오늘의 배지 <b>${esc(s.topic.badge?.name)}</b>는 금메달 <b>${r[0].id}</b>에게!</div>` : ""}
   </div>
+  ${sr && sr.id === s.id ? seasonResultCard(sr) : ""}
   <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === S.tab ? "on" : ""}" data-tab="${x.id}">${x.id}</div>`).join("")}</div>
   ${s.entries[S.tab]?.result ? resultCard(S.tab, s.entries[S.tab]) : `<div class="card muted">${S.tab}은(는) 이번에 제출하지 않았어요.</div>`}
   ${archiveCard(s)}
@@ -478,7 +627,7 @@ function viewCeremony() {
 async function viewScores() {
   const done = (await store.list()).filter((s) => s.status === "done");
   const stats = PEOPLE.map((p) => ({ p, st: scoreStats(done, p.id) }));
-  const awardIcon = (a) => (a === "gold" ? "🥇" : a === "silver" ? "🥈" : a === "challenge" ? "🌱" : "");
+  const awardIcon = (s, id) => MEDAL_ICON[s.medals?.[id]] || "";
   return `<div class="card"><h2>📊 점수판</h2>
     <p class="small muted">밍은 초3~4 기준, 울과 펄은 어른 기준으로 매긴 자기 기준 점수예요. (한 번에 100점 만점)</p>
     <table class="stbl"><thead><tr><th></th><th>횟수</th><th>누적</th><th>평균</th><th>최고</th></tr></thead><tbody>
@@ -494,18 +643,26 @@ async function viewScores() {
     ${st.n ? `<p class="small" style="margin:0 0 4px"><b>항목별 평균</b></p>
     ${Object.entries(SCORE_LABELS).map(([k, [lab, max]]) => `<div class="score-row"><span>${lab}</span><div class="score-bar"><i style="width:${Math.round(st.cat[k] / max * 100)}%"></i></div><span class="small">${Math.round(st.cat[k] * 10) / 10}/${max}</span></div>`).join("")}
     <p class="small" style="margin:12px 0 4px"><b>회차별 점수</b></p>
-    <table class="stbl">${st.list.slice().reverse().map((s) => `<tr><td class="small">${esc(s.date.slice(5))}</td><td class="small" style="text-align:left">${esc(s.topic?.title || "")}</td><td><b>${s.entries[p.id].result.total}</b>점 ${awardIcon(s.awards?.[p.id])}</td></tr>`).join("")}</table>`
+    <table class="stbl">${st.list.slice().reverse().map((s) => `<tr><td class="small">${esc(s.date.slice(5))}</td><td class="small" style="text-align:left">${esc(s.topic?.title || "")}</td><td><b>${s.entries[p.id].result.total}</b>점 ${awardIcon(s, p.id)}</td></tr>`).join("")}</table>`
     : `<p class="muted small">아직 점수가 없어요. 첫 글쓰기에 도전!</p>`}
   </div>`).join("")}`;
 }
 
 /* ===================== 배지함 / 기록 / 도움말 ===================== */
 async function viewBadges() {
-  const done = (await store.list()).filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
-  return `<div class="card"><h2>🏅 배지 보관함</h2></div>
-  ${PEOPLE.map((p) => { const mine = done.filter((s) => s.awards?.[p.id]); const n = countBadges(done, p.id); return `<div class="card">
-    <h3 class="p-${p.id}">${p.id} <span class="small muted">(${p.role})</span> · 🥇${n.gold} 🥈${n.silver}${n.challenge ? ` 🌱${n.challenge}` : ""}</h3>
-    ${mine.length ? `<div class="grid-badges">${mine.map((s) => `<div class="b">${badgeSVG(s.topic.badge, s.awards[p.id], 86)}<div>${esc(s.topic.badge?.name)}</div><div>${esc(s.date.slice(5))}</div></div>`).join("")}</div>` : `<p class="muted small">아직 배지가 없어요. 첫 배지에 도전!</p>`}
+  const all = await store.list();
+  const done = all.filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
+  const tro = trophies(all); const m = await meta.get();
+  const wishes = Object.entries(m.wishes || {}).map(([k, v]) => ({ season: k.split("-")[0], id: k.split("-")[1], ...v })).sort((a, b) => b.at - a.at);
+  return `<div class="card"><h2>🏆 트로피 진열장</h2>
+    ${tro.length ? `<div class="grid-badges">${tro.map((t) => `<div class="b"><div style="font-size:54px">🏆</div><div class="jua" style="font-size:17px;color:var(--ink)">시즌 ${t.season}</div><div>${t.winners.join(", ")} 우승</div></div>`).join("")}</div>`
+      : `<p class="muted small">아직 트로피가 없어요. 시즌(${SEASON_GAMES}편)을 마치면 1등에게 트로피를 줘요!</p>`}
+  </div>
+  ${wishes.length ? `<div class="card"><h3>🧞 이룬 소원</h3><ul class="clean">${wishes.map((w) => `<li><b class="p-${w.id}">${esc(w.id)}</b> · 시즌 ${esc(w.season)} · ${esc(w.text)}</li>`).join("")}</ul></div>` : ""}
+  <div class="card"><h2>🏅 배지 보관함</h2><p class="small muted">배지는 그날 🥇 금메달을 딴 사람만 받아요.</p></div>
+  ${PEOPLE.map((p) => { const mine = done.filter((s) => s.awards?.[p.id] === "gold"); const n = countBadges(done, p.id); const myT = tro.filter((t) => t.winners.includes(p.id)); return `<div class="card">
+    <h3 class="p-${p.id}">${p.id} <span class="small muted">(${p.role})</span> · ${myT.length ? `🏆${myT.length} ` : ""}🥇${n.gold} 🥈${n.silver} 🥉${n.bronze}</h3>
+    ${mine.length ? `<div class="grid-badges">${mine.map((s) => `<div class="b">${badgeSVG(s.topic.badge, "gold", 86)}<div>${esc(s.topic.badge?.name)}</div><div>${esc(s.date.slice(5))}</div></div>`).join("")}</div>` : `<p class="muted small">아직 배지가 없어요. 금메달에 도전!</p>`}
   </div>`; }).join("")}`;
 }
 async function viewHistory() {
@@ -514,7 +671,7 @@ async function viewHistory() {
   return `<div class="card"><h2>📚 지난 글쓰기</h2></div>` + all.map((s) => `<div class="card">
     <div class="small muted">${esc(s.date)} · ${s.status === "done" ? "완료" : "진행 중"}</div>
     <h3>${esc(s.topic?.title || "(주제 정하기 전)")}</h3>
-    ${s.awards ? `<p class="small">${PEOPLE.map((p) => `${p.id} ${s.entries[p.id]?.result ? s.entries[p.id].result.total + "점" : "-"} ${s.awards[p.id] === "gold" ? "🥇" : s.awards[p.id] === "silver" ? "🥈" : s.awards[p.id] === "challenge" ? "🌱" : ""}`).join(" · ")}</p>` : ""}
+    ${s.status === "done" ? `<p class="small">${s.season ? `시즌 ${s.season} 제${s.game}편${s.event?.mult ? ` · ${s.event.mult}배 경기` : ""}<br>` : ""}${PEOPLE.map((p) => `${p.id} ${s.entries[p.id]?.result ? s.entries[p.id].result.total + "점" : "-"} ${MEDAL_ICON[s.medals?.[p.id]] || ""}`).join(" · ")}</p>` : ""}
     <div class="row"><button class="ghost" data-open="${esc(s.id)}">보기</button>${s.status === "done" ? `<button class="ghost" data-blog="${esc(s.id)}">📰 블로그</button>` : ""}<button class="line" data-del="${esc(s.id)}">삭제</button></div></div>`).join("");
 }
 function viewHelp() {
@@ -528,8 +685,13 @@ function viewHelp() {
     <p>한 문단에는 <b>중심 문장</b>(가장 하고 싶은 말) 1개와 <b>뒷받침 문장</b>(이유, 예) 2~3개가 들어가요. 문단이 바뀌면 줄을 바꾸고 한 칸 들여 써요.</p>
     <h3>점수표 (100점)</h3>
     <p class="small">짜임 25 · 내용 25 · 문단·문장 20 · 맞춤법 15 · 글씨 15<br>밍은 초등 3~4학년 기준, 펄과 울은 어른 기준으로 각자 채점해서 순위를 정해요.</p>
-    <h3>배지 규칙</h3>
-    <p class="small">1등 🥇, 2등 🥈 배지는 그날 주제에 맞춘 하나뿐인 디자인이에요. 밍은 3등이어도 열심히 도전하면 🌱 도전 배지를 받을 수 있어요.</p>
+    <h3>메달과 배지</h3>
+    <p class="small">글 점수 순서대로 🥇 금메달, 🥈 은메달, 🥉 동메달을 받아요. 그날 주제에 맞춘 하나뿐인 배지는 🥇 금메달을 딴 사람만 받아요.</p>
+    <h3>시즌 규칙</h3>
+    <p class="small">한 시즌은 글쓰기 ${SEASON_GAMES}편이에요. 금메달 3점, 은메달 2점, 동메달 1점을 모아요.<br>
+    🧞 시즌 점수 ${WISH_POINTS}점을 모으면 소원 하나를 이룰 수 있어요.<br>
+    🏆 시즌이 끝났을 때 점수가 가장 높은 사람은 우승 트로피를 받아요.<br>
+    🎉 가끔 깜짝 2배·3배 점수 경기가 열려요!</p>
   </div>
   <div class="card"><h3>⚙️ 설정</h3><p class="small muted">저장소: ${remoteStore ? "가족 공용(모든 기기에서 같이 보임)" : "이 기기만"}</p><button class="line" id="logout">가족 코드 다시 넣기</button></div>`;
 }
@@ -587,7 +749,21 @@ document.addEventListener("click", async (ev) => {
   if (t.dataset.go) { S.view = t.dataset.go; setErr(""); return render(); }
   if (t.id === "codeOk") { const v = $("#codeIn").value; if (!v.trim()) return; setErr(""); try { await tryCode(v); } catch (e) { familyCode = ""; setErr(e.message); } return render(); }
   if (t.id === "logout") { familyCode = ""; remoteStore = null; ls.set("fwr_code", ""); return render(); }
-  if (t.id === "startNew") { S.session = newSession(); S.tab = "밍"; S.view = "session"; await store.save(S.session); return render(); }
+  if (t.id === "startNew") { const info = seasonInfo(await store.list()); S.session = newSession(info); S.tab = "밍"; S.view = "session"; await store.save(S.session); return render(); }
+  if (t.dataset.mc) {
+    collectAnswers();
+    const s = S.session; const a = (s.answers[S.tab] = s.answers[S.tab] || {});
+    a[t.dataset.mc] = a[t.dataset.mc] === t.dataset.v ? "" : t.dataset.v;
+    const y = window.scrollY; render(); window.scrollTo(0, y); return;
+  }
+  if (t.dataset.wish) {
+    const [season, id, i] = t.dataset.wish.split("-");
+    const text = prompt(`${id}의 소원은 무엇인가요? (예: 주말에 놀이공원 가기)`);
+    if (!text || !text.trim()) return;
+    const m = await meta.get();
+    m.wishes = m.wishes || {}; m.wishes[`${season}-${id}-${i}`] = { text: text.trim().slice(0, 100), at: Date.now() };
+    await meta.set(m); return render();
+  }
   if (t.dataset.open) { S.session = await store.get(t.dataset.open); S.view = "session"; S.tab = "밍"; return render(); }
   if (t.dataset.del) {
     const msg = t.dataset.inprogress ? "진행 중인 글쓰기를 삭제할까요? 인터뷰 답과 제출한 글이 모두 지워져요." : "이 기록을 삭제할까요? 배지도 같이 사라져요.";
@@ -638,12 +814,23 @@ document.addEventListener("click", async (ev) => {
     await busy("점수를 모으는 중…", async () => {
       const all = await store.list();
       const fresh = all.find((x) => x.id === S.session.id) || S.session;
-      const past = all.filter((x) => x.status === "done" && x.id !== fresh.id);
-      const { awards, ranked, notes } = computeAwards(fresh, past);
-      fresh.awards = awards; fresh.ranking = ranked; fresh.awardNotes = notes; fresh.status = "done";
-      S.session = fresh; S.tab = ranked[0]?.id || "밍"; await store.save(fresh);
+      if (fresh.status === "done") { S.session = fresh; return; } // 다른 기기에서 이미 시상함
+      const before = seasonInfo(all.filter((x) => x.id !== fresh.id));
+      const { ranked, medals, points, awards } = computeMedals(fresh);
+      Object.assign(fresh, { ranking: ranked, medals, points, awards, season: before.season, game: before.played + 1, status: "done" });
+      await store.save(fresh);
+      const after = seasonInfo([...all.filter((x) => x.id !== fresh.id), fresh]);
+      const complete = before.played + 1 >= SEASON_GAMES;
+      const cur = complete ? standings(seasonSessions([...all.filter((x) => x.id !== fresh.id), fresh]).filter((x) => x.season === before.season)) : after;
+      const top = Math.max(...Object.values(cur.points));
+      S.seasonResult = {
+        id: fresh.id, season: before.season, played: before.played + 1, complete, points: cur.points, medals: cur.medals,
+        winners: PEOPLE.filter((p) => cur.points[p.id] === top).map((p) => p.id),
+        newWishes: PEOPLE.filter((p) => Math.floor(cur.points[p.id] / WISH_POINTS) > Math.floor(before.points[p.id] / WISH_POINTS)).map((p) => p.id),
+      };
+      S.session = fresh; S.tab = ranked[0]?.id || "밍";
     }, "🥁");
-    if (S.session?.status === "done") archiveSession(S.session, true); // 블로그 올리기 + 메일 (뒤에서 진행)
+    if (S.session?.status === "done" && S.seasonResult?.id === S.session.id) archiveSession(S.session, true); // 블로그 올리기 + 메일 (뒤에서 진행)
     return;
   }
   if (t.dataset.href) { window.open(t.dataset.href, "_blank"); return; }

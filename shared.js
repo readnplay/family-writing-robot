@@ -8,7 +8,7 @@ const FAMILY = [
   { id: "펄", role: "엄마" },
   { id: "밍", role: "민결" },
 ];
-const AWARD_TEXT = { gold: "🥇 1등 배지", silver: "🥈 2등 배지", challenge: "🌱 도전 배지" };
+const AWARD_TEXT = { gold: "🥇 금메달", silver: "🥈 은메달", bronze: "🥉 동메달" };
 
 /* ---------- 배지 그림 ---------- */
 const TIER = { gold: { c: "#f5b301", t: "1등" }, silver: { c: "#a9b4bf", t: "2등" }, challenge: { c: "#3fb57a", t: "도전" } };
@@ -41,12 +41,13 @@ function postFromSession(s) {
   return {
     id: s.id,
     date: s.date,
+    season: s.season || null, game: s.game || null, mult: s.event?.mult || 1,
     publishedAt: Date.now(),
     topic: { title: s.topic.title, question: s.topic.question, situation: s.topic.situation, badge: s.topic.badge },
     people: FAMILY.filter((p) => s.entries?.[p.id]?.result).map((p) => {
       const r = s.entries[p.id].result;
       return {
-        id: p.id, role: p.role, rank: rankOf(p.id) + 1, award: s.awards?.[p.id] || null,
+        id: p.id, role: p.role, rank: rankOf(p.id) + 1, medal: s.medals?.[p.id] || null, points: s.points?.[p.id] || 0, award: s.awards?.[p.id] === "gold" ? "gold" : null,
         total: r.total, scores: r.scores, transcript: r.transcript || "",
         praise: r.praise || [], improve: r.improve || [], corrections: r.corrections || [],
         rewrite_example: r.rewrite_example || "", next_mission: r.next_mission || "", teacher_comment: r.teacher_comment || "",
@@ -64,14 +65,14 @@ const list = (arr) => (arr && arr.length ? `<ul>${arr.map((x) => `<li>${esc(x)}<
 function postBodyHTML(post) {
   const t = post.topic;
   return `<div style="font-size:16px;line-height:1.8;color:#2b2622">
-  <p style="color:#7a6f66;margin:0">${esc(post.date)} · ${ROBOT_NAME}와 함께한 가족 글쓰기</p>
+  <p style="color:#7a6f66;margin:0">${esc(post.date)} · ${post.season ? `시즌 ${post.season} 제${post.game}편 · ` : ""}${ROBOT_NAME}와 함께한 가족 글쓰기</p>
   <h2 style="margin:6px 0">${esc(t.title)}</h2>
   <p style="margin:0 0 6px"><b>❓ ${esc(t.question)}</b></p>
   ${t.situation ? `<p style="margin:0 0 10px">${esc(t.situation)}</p>` : ""}
   <p style="margin:0 0 14px">오늘의 배지: ${esc(t.badge?.emoji || "")} <b>${esc(t.badge?.name || "")}</b> “${esc(t.badge?.motto || "")}”</p>
   ${post.people.map((p) => `
   <hr style="border:0;border-top:2px dashed #eadfce;margin:18px 0">
-  <h3 style="margin:0 0 4px">✏️ ${esc(p.id)} (${esc(p.role)}) — ${p.rank}등 · ${p.total}점 ${p.award ? "· " + AWARD_TEXT[p.award] : ""}</h3>
+  <h3 style="margin:0 0 4px">✏️ ${esc(p.id)} (${esc(p.role)}) — ${p.rank}등 · ${p.total}점 ${p.medal ? "· " + AWARD_TEXT[p.medal] : ""}${p.award ? " · 🏅 배지" : ""}</h3>
   <div style="white-space:pre-wrap;background:#fffdf6;border:1px solid #eadfce;border-radius:8px;padding:12px;margin:8px 0">${markUnknown(p.transcript)}</div>
   <p style="margin:6px 0"><b>👩‍🏫 선생님 한마디</b><br>${esc(p.teacher_comment)}</p>
   ${p.praise.length ? `<p style="margin:6px 0 0"><b>👍 잘한 점</b></p>${list(p.praise)}` : ""}
@@ -102,10 +103,10 @@ function a5HTML(post) {
   const t = post.topic;
   return `<div class="a5doc">${post.people.map((p) => `
   <section class="a5page">
-    <div class="a5head">${badgeSVG(t.badge, p.award, 52)}
+    <div class="a5head">${p.award ? badgeSVG(t.badge, "gold", 52) : `<div style="font-size:34pt;line-height:1">${({ gold: "🥇", silver: "🥈", bronze: "🥉" })[p.medal] || "✏️"}</div>`}
       <div><div class="d">${esc(post.date)} · ${ROBOT_NAME} 가족 글쓰기</div><div class="t">${esc(t.title)}</div></div></div>
     <p class="a5q"><b>❓ ${esc(t.question)}</b></p>
-    <div class="a5who">✏️ ${esc(p.id)} (${esc(p.role)}) · ${p.rank}등 · ${p.total}점 ${p.award ? "· " + AWARD_TEXT[p.award] : ""}</div>
+    <div class="a5who">✏️ ${esc(p.id)} (${esc(p.role)}) · ${p.rank}등 · ${p.total}점 ${p.medal ? "· " + AWARD_TEXT[p.medal] : ""}</div>
     <div class="a5score">${Object.entries(SCORE_NAMES).map(([k, n]) => `${n} ${p.scores?.[k] ?? "-"}`).join(" · ")}</div>
     <h4>📄 내가 쓴 글</h4>
     <div class="a5text">${markUnknown(p.transcript)}</div>

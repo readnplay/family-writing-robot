@@ -49,11 +49,11 @@ function listView() {
   return POSTS.map((p) => `<a class="card item" href="?id=${encodeURIComponent(p.id)}">
     ${badgeSVG(p.topic.badge, null, 64)}
     <div><div class="sub">${esc(p.date)}</div><h3>${esc(p.topic.title)}</h3>
-    <div class="chips">${p.people.map((x) => `<span>${esc(x.id)} ${x.award === "gold" ? "🥇" : x.award === "silver" ? "🥈" : x.award === "challenge" ? "🌱" : ""}</span>`).join("")}</div></div></a>`).join("");
+    <div class="chips">${p.people.map((x) => `<span>${esc(x.id)} ${({ gold: "🥇", silver: "🥈", bronze: "🥉" })[x.medal || x.award] || ""}</span>`).join("")}</div></div></a>`).join("");
 }
 function postView(p) {
   return `<div class="card">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">${p.people.filter((x) => x.award).map((x) => `<div style="text-align:center">${badgeSVG(p.topic.badge, x.award, 70)}<div class="sub">${esc(x.id)}</div></div>`).join("")}</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px">${p.people.filter((x) => x.award === "gold").map((x) => `<div style="text-align:center">${badgeSVG(p.topic.badge, "gold", 70)}<div class="sub">${esc(x.id)}</div></div>`).join("")}</div>
     <div id="body">${postBodyHTML(p)}</div>
   </div>
   <div class="card">
