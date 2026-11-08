@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>가족 글쓰기 로봇</title>
+<meta name="theme-color" content="#fff7ec">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff7ec; --card:#ffffff; --ink:#2b2622; --sub:#7a6f66; --line:#eadfce;
+  --accent:#ff7a45; --accent-ink:#ffffff; --soft:#fff0e3; --good:#2f9e6b; --warn:#d9480f;
+  --pearl:#e86a92; --wool:#3b82c4; --ming:#f59f00;
+  --gold:#f5b301; --silver:#a9b4bf; --challenge:#3fb57a;
+  --radius:18px; --shadow:0 4px 14px rgba(120,80,30,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;font-size:17px;line-height:1.6;-webkit-text-size-adjust:100%}
+h1,h2,h3,.jua{font-family:"Jua","Gowun Dodum",sans-serif;font-weight:400;line-height:1.3}
+h1{font-size:28px;margin:0}
+h2{font-size:23px;margin:0 0 10px}
+h3{font-size:19px;margin:0 0 6px}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px 96px}
+header.top{display:flex;align-items:center;gap:10px;padding:6px 0 14px}
+header.top .robot{font-size:34px}
+header.top .sub{color:var(--sub);font-size:14px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin:0 0 14px}
+.muted{color:var(--sub)}
+.small{font-size:14px}
+button,.btn{font:inherit;border:0;border-radius:14px;padding:13px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-family:"Jua",sans-serif;font-size:18px;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px}
+button.ghost{background:var(--soft);color:var(--ink)}
+button.line{background:transparent;border:2px solid var(--line);color:var(--ink)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.block{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1 1 auto}
+input[type=text],input[type=password],textarea{width:100%;font:inherit;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:#fffdf9;color:var(--ink)}
+textarea{min-height:72px;resize:vertical}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+label.q{display:block;margin:14px 0 6px;font-weight:700}
+.tabs{display:flex;gap:8px;margin:0 0 12px}
+.tab{flex:1;padding:10px 6px;border-radius:14px;background:var(--soft);color:var(--ink);font-family:"Jua";font-size:18px;text-align:center;cursor:pointer;border:3px solid transparent;min-height:auto}
+.tab.on{border-color:currentColor;background:#fff}
+.p-펄{color:var(--pearl)} .p-울{color:var(--wool)} .p-밍{color:var(--ming)}
+.chip{display:inline-block;padding:3px 10px;border-radius:999px;background:var(--soft);font-size:14px;margin:2px 4px 2px 0}
+.chip.done{background:#e3f6ec;color:var(--good)}
+.steps{display:flex;gap:6px;margin:0 0 14px}
+.steps span{flex:1;height:8px;border-radius:8px;background:var(--line)}
+.steps span.on{background:var(--accent)}
+.topic-title{font-size:26px;margin:4px 0 8px}
+.badge-wrap{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.badge-wrap svg{flex:0 0 auto}
+.guide-part{border-left:6px solid var(--accent);padding:6px 0 6px 12px;margin:12px 0}
+.guide-part.intro{border-color:#ff9f68}.guide-part.cause{border-color:#7c9cff}.guide-part.solution{border-color:#3fb57a}.guide-part.conclusion{border-color:#c77dff}
+.starter{background:var(--soft);border-radius:10px;padding:6px 10px;margin:6px 0;font-size:15px}
+.score-bar{height:10px;border-radius:10px;background:var(--line);overflow:hidden}
+.score-bar i{display:block;height:100%;background:var(--accent)}
+.score-row{display:grid;grid-template-columns:110px 1fr 54px;gap:8px;align-items:center;margin:6px 0;font-size:15px}
+.transcript{white-space:pre-wrap;background:#fffdf6;border:2px dashed var(--line);border-radius:12px;padding:12px;font-size:16px}
+.transcript mark{background:#ffd8a8;border-radius:4px}
+.total{font-family:"Jua";font-size:40px;color:var(--accent)}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.thumbs img{width:84px;height:110px;object-fit:cover;border-radius:10px;border:2px solid var(--line)}
+.podium{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin:10px 0 4px;text-align:center}
+.podium .pl{flex:1;max-width:200px}
+.podium .stand{border-radius:12px 12px 0 0;color:#fff;font-family:"Jua";font-size:22px;padding:8px 0}
+.grid-badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
+.grid-badges .b{text-align:center;font-size:13px;color:var(--sub)}
+.notice{background:#fff3bf;border-radius:12px;padding:10px 12px;font-size:15px;margin:0 0 12px}
+.err{background:#ffe3e3;color:#a61e1e;border-radius:12px;padding:10px 12px;font-size:15px;margin:10px 0}
+nav.bottom{position:fixed;left:0;right:0;bottom:0;background:#fffaf3;border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav.bottom button{flex:1;max-width:180px;background:transparent;color:var(--sub);font-size:15px;flex-direction:column;gap:0;min-height:52px;padding:4px}
+nav.bottom button b{font-size:22px;line-height:1.1}
+nav.bottom button.on{color:var(--accent)}
+.spinner{display:inline-block;width:22px;height:22px;border:3px solid rgba(0,0,0,.12);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{text-align:center;padding:26px 10px}
+.loading .big{font-size:46px;animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.toggle{display:flex;align-items:center;gap:10px;background:var(--soft);padding:10px 12px;border-radius:12px;cursor:pointer}
+.toggle input{width:22px;height:22px}
+.rate{font-family:"Jua";font-size:20px}
+ul.clean{margin:6px 0;padding-left:20px}
+@media (max-width:420px){ h1{font-size:24px} .topic-title{font-size:22px} .score-row{grid-template-columns:92px 1fr 48px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="robot">🤖</div>
+    <div><h1>가족 글쓰기 로봇</h1><div class="sub">펄 · 울 · 밍의 오늘의 글쓰기</div></div>
+  </header>
+  <div id="storeNotice"></div>
+  <main id="app"></main>
+</div>
+<nav class="bottom" id="nav">
+  <button data-go="home"><b>🏠</b>오늘</button>
+  <button data-go="badges"><b>🏅</b>배지함</button>
+  <button data-go="history"><b>📚</b>기록</button>
+  <button data-go="help"><b>❓</b>쓰는 법</button>
+</nav>
+
+<script>
+/* ===================== 기본 설정 ===================== */
+const PEOPLE = [
+  { id: "펄", role: "엄마", level: "adult" },
+  { id: "울", role: "아빠", level: "adult" },
+  { id: "밍", role: "민결", level: "child" },
+];
+const MING_TARGET = 0.7; // 밍은 10번 중 7번 이상 배지
+const SCORE_LABELS = { structure: ["짜임", 25], content: ["내용", 25], sentence: ["문단·문장", 20], spelling: ["맞춤법", 15], handwriting: ["글씨", 15] };
+const PART_LABELS = { intro: "서론", cause: "본론① 원인", solution: "본론② 해결", conclusion: "결론" };
+
+const FIXED_Q = [
+  { k: "weather", q: "오늘 날씨는 어땠나요? 날씨 때문에 생긴 일이 있었나요?" },
+  { k: "mood", q: "오늘 기분은 어때요? 왜 그런 기분이 들었나요?" },
+];
+const POOL_Q = [
+  "요즘 가장 관심 있는 것은 무엇인가요?",
+  "요즘 불편하거나 속상했던 일이 있었나요?",
+  "이번 주에 가장 기억에 남는 일은 무엇인가요?",
+  "요즘 고치고 싶은 습관이 있나요?",
+  "우리 집에서 바뀌었으면 하는 점이 있나요?",
+  "학교나 회사, 동네에서 '이건 문제야!' 하고 느낀 일이 있나요?",
+  "요즘 가족에게 고마웠던 일이나 서운했던 일은 무엇인가요?",
+  "요즘 자주 하는 놀이나 취미는? 그러다 생긴 문제는 없었나요?",
+  "뉴스나 책에서 본 이야기 중 기억나는 것이 있나요?",
+  "겨울이라서 좋은 점이나 힘든 점은 무엇인가요?",
+  "요즘 친구나 동료와 있었던 일 중 기억나는 것은?",
+  "요즘 시간이 부족하다고 느낀 적이 있나요? 왜 그랬나요?",
+];
+const STARTERS = {
+  child: {
+    intro: ["요즘 ○○ 때문에 문제가 생겼다.", "나는 이 문제를 보고 ○○한 기분이 들었다.", "그래서 이 문제의 까닭과 해결 방법을 생각해 보았다."],
+    cause: ["이 문제가 생긴 까닭은 첫째, ○○ 때문이다.", "둘째, ○○ 때문이다."],
+    solution: ["이 문제를 해결하려면 첫째, ○○해야 한다.", "왜냐하면 ○○이기 때문이다.", "예를 들어 ○○.", "둘째, ○○하면 좋겠다."],
+    conclusion: ["정리하면, ○○.", "앞으로 나는 이 문제가 다시 생기지 않도록 ○○하겠다."],
+  },
+  adult: {
+    intro: ["최근 ○○라는 문제를 겪으며 ○○라고 느꼈다.", "이 글에서는 원인을 살피고 해결책을 제안하고자 한다."],
+    cause: ["가장 근본적인 원인은 ○○이다.", "여기에 ○○라는 요인이 더해졌다."],
+    solution: ["첫째, ○○해야 한다. 그 이유는 ○○이다.", "둘째, ○○. 예컨대 ○○."],
+    conclusion: ["요컨대 ○○.", "같은 문제가 반복되지 않도록 앞으로 ○○하겠다."],
+  },
+};
+
+/* ===================== 유틸 ===================== */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const ls = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+function seededPick(arr, n, seed) {
+  let h = 0; for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
+  return a.slice(0, n);
+}
+function safeColor(c, d) { return /^#[0-9a-fA-F]{6}$/.test(c || "") ? c : d; }
+
+/* ===================== 서버 통신 ===================== */
+let familyCode = ls.get("fwr_code", "");
+let remoteStore = null; // true: 가족 공용 저장소, false: 이 기기만
+async function api(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, code: familyCode }) });
+  let data = {};
+  try { data = await r.json(); } catch { throw new Error(r.status === 413 ? "사진이 너무 커요. 사진 수를 줄여 주세요." : `서버 응답 오류 (${r.status})`); }
+  if (!r.ok) { const e = new Error(data.error || `오류 (${r.status})`); e.status = r.status; throw e; }
+  return data;
+}
+const store = {
+  async list() {
+    if (remoteStore) { const d = await api("/api/data", { action: "list" }); return d.sessions || []; }
+    return ls.get("fwr_sessions", []);
+  },
+  async get(id) {
+    if (remoteStore) { const d = await api("/api/data", { action: "get", id }); return d.session; }
+    return ls.get("fwr_sessions", []).find((s) => s.id === id) || null;
+  },
+  async save(s) {
+    s.updatedAt = Date.now();
+    if (remoteStore) return api("/api/data", { action: "save", session: s });
+    const all = ls.get("fwr_sessions", []).filter((x) => x.id !== s.id); all.push(s); ls.set("fwr_sessions", all);
+  },
+  async remove(id) {
+    if (remoteStore) return api("/api/data", { action: "delete", id });
+    ls.set("fwr_sessions", ls.get("fwr_sessions", []).filter((x) => x.id !== id));
+  },
+};
+
+/* ===================== 배지 그림 ===================== */
+const TIER = { gold: { c: "#f5b301", t: "1등" }, silver: { c: "#a9b4bf", t: "2등" }, challenge: { c: "#3fb57a", t: "도전" } };
+function starPts(cx, cy, R, r, n = 5) { const p = []; for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n; const rad = i % 2 ? r : R; p.push(`${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`); } return p.join(" "); }
+function badgeSVG(b, tier, size = 110) {
+  b = b || {}; const id = "g" + Math.random().toString(36).slice(2, 9);
+  const c1 = safeColor(b.color1, "#ffb86b"), c2 = safeColor(b.color2, "#ff7a45");
+  const T = TIER[tier] || null; const ring = T ? T.c : "#d9cbb8";
+  const shapes = {
+    circle: `<circle cx="60" cy="56" r="42"/>`,
+    hexagon: `<polygon points="60,12 98,34 98,78 60,100 22,78 22,34"/>`,
+    shield: `<path d="M60 12 L98 25 V56 C98 80 81 94 60 102 C39 94 22 80 22 56 V25 Z"/>`,
+    star: `<polygon points="${starPts(60, 58, 48, 30)}"/>`,
+    flower: `<g>${[0, 60, 120, 180, 240, 300].map((a) => `<circle cx="${(60 + 24 * Math.cos(a * Math.PI / 180)).toFixed(1)}" cy="${(56 + 24 * Math.sin(a * Math.PI / 180)).toFixed(1)}" r="20"/>`).join("")}<circle cx="60" cy="56" r="26"/></g>`,
+  };
+  const shape = shapes[b.shape] || shapes.circle;
+  return `<svg width="${size}" height="${size * 1.18}" viewBox="0 0 120 142" role="img" aria-label="${esc((b.name || "배지") + (T ? " " + T.t : ""))}">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+    ${T ? `<path d="M40 88 L30 136 L46 126 L56 138 L60 94 Z" fill="${ring}" opacity=".9"/><path d="M80 88 L90 136 L74 126 L64 138 L60 94 Z" fill="${ring}" opacity=".75"/>` : ""}
+    <g fill="${ring}" transform="translate(60 56) scale(1.13) translate(-60 -56)">${shape}</g>
+    <g fill="url(#${id})">${shape}</g>
+    <text x="60" y="70" text-anchor="middle" font-size="40">${esc(b.emoji || "✏️")}</text>
+    ${T ? `<rect x="36" y="${b.shape === "star" ? 98 : 92}" width="48" height="20" rx="10" fill="#fff" stroke="${ring}" stroke-width="3"/><text x="60" y="${b.shape === "star" ? 113 : 107}" text-anchor="middle" font-size="12" font-weight="700" fill="#333" font-family="Jua, sans-serif">${T.t}</text>` : ""}
+  </svg>`;
+}
+
+/* ===================== 상태 ===================== */
+let S = { view: "home", session: null, tab: "밍", busy: false, err: "" };
+function setErr(m) { S.err = m || ""; }
+function errBox() { return S.err ? `<div class="err">${esc(S.err)}</div>` : ""; }
+
+function newSession() {
+  const date = todayStr();
+  const qs = [...FIXED_Q, ...seededPick(POOL_Q, 3, date + Math.random()).map((q, i) => ({ k: "p" + i, q }))];
+  return { id: date + "-" + Math.random().toString(36).slice(2, 7), date, status: "interview", questions: qs, answers: {}, topic: null, entries: {}, awards: null, createdAt: Date.now() };
+}
+
+/* ===================== 화면: 가족 코드 ===================== */
+function viewCode() {
+  return `<div class="card"><h2>🔒 가족 코드</h2>
+    <p class="muted">우리 가족만 쓸 수 있도록 가족 코드를 넣어 주세요. 한 번 넣으면 이 기기에 기억돼요.</p>
+    <input id="codeIn" type="password" inputmode="numeric" autocomplete="off" placeholder="가족 코드">
+    ${errBox()}
+    <div style="margin-top:12px"><button class="block" id="codeOk">들어가기</button></div></div>`;
+}
+async function tryCode(code) {
+  familyCode = code.trim();
+  const d = await api("/api/data", { action: "ping" });
+  ls.set("fwr_code", familyCode);
+  remoteStore = !!d.configured;
+  renderNotice();
+}
+function renderNotice() {
+  $("#storeNotice").innerHTML = remoteStore === false
+    ? `<div class="notice">💾 지금은 가족 공용 저장소가 연결되지 않아 <b>이 기기에만</b> 기록이 저장돼요.</div>` : "";
+}
+
+/* ===================== 화면: 홈 ===================== */
+async function viewHome() {
+  const all = await store.list();
+  const open = all.filter((s) => s.status !== "done").sort((a, b) => b.createdAt - a.createdAt)[0];
+  const done = all.filter((s) => s.status === "done");
+  const rate = mingRate(done);
+  return `
+  ${open ? `<div class="card"><h2>✏️ 진행 중인 글쓰기</h2>
+     <p>${esc(open.date)} · ${open.topic ? `<b>${esc(open.topic.title)}</b>` : "인터뷰 중"}</p>
+     <p class="small muted">${stageText(open)}</p>
+     <div class="row"><button data-open="${esc(open.id)}">이어하기</button></div></div>` : ""}
+  <div class="card">
+    <h2>🤖 오늘의 글쓰기 시작</h2>
+    <p class="muted">로봇이 몇 가지 질문을 하면 펄, 울, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
+    <button class="block" id="startNew">새 글쓰기 시작하기</button>
+  </div>
+  <div class="card">
+    <h2>🏅 배지 현황</h2>
+    <div class="row">${PEOPLE.map((p) => { const n = countBadges(done, p.id); return `<div style="text-align:center"><div class="jua p-${p.id}" style="font-size:22px">${p.id}</div><div class="small muted">${p.role}</div><div class="jua" style="font-size:20px">🥇${n.gold} 🥈${n.silver}${p.id === "밍" ? ` 🌱${n.challenge}` : ""}</div></div>`; }).join("")}</div>
+    <p class="small muted" style="margin-top:10px">밍의 최근 10번 배지 획득: <span class="rate">${rate.got}/${rate.n}</span> ${rate.n ? `(${Math.round(rate.got / rate.n * 100)}%)` : ""} · 목표 70% 이상</p>
+  </div>`;
+}
+function stageText(s) {
+  if (s.status === "interview") return "1단계: 인터뷰에 답하는 중";
+  if (s.status === "writing") { const d = PEOPLE.filter((p) => s.entries[p.id]?.result).map((p) => p.id); return `2단계: 글쓰기·사진 제출 중 (제출: ${d.join(", ") || "아직 없음"})`; }
+  return "";
+}
+
+/* ===================== 화면: 인터뷰 ===================== */
+function viewInterview() {
+  const s = S.session; const p = S.tab;
+  const a = s.answers[p] || {};
+  const doneCount = PEOPLE.filter((x) => Object.values(s.answers[x.id] || {}).some((v) => v && v.trim())).length;
+  return `<div class="steps"><span class="on"></span><span></span><span></span><span></span></div>
+  <div class="card">
+    <h2>🎤 오늘의 인터뷰</h2>
+    <p class="small muted">한 사람씩 이름을 누르고 답해 주세요. 짧게 써도 괜찮아요. (휴대폰 키보드의 🎤 버튼으로 말로 입력해도 돼요)</p>
+    <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === p ? "on" : ""}" data-tab="${x.id}">${x.id}${Object.values(s.answers[x.id] || {}).some((v) => v && v.trim()) ? " ✓" : ""}</div>`).join("")}</div>
+    ${s.questions.map((q, i) => `<label class="q">${i + 1}. ${esc(q.q)}</label><textarea data-ans="${esc(q.k)}" placeholder="${p}의 대답">${esc(a[q.k] || "")}</textarea>`).join("")}
+  </div>
+  ${errBox()}
+  <div class="card">
+    <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount < 3 ? "· 세 사람 모두 답하면 더 좋은 주제가 나와요" : "· 모두 답했어요!"}</p>
+    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 오늘의 주제 정하기</button>
+  </div>`;
+}
+function collectAnswers() {
+  const s = S.session; const p = S.tab; s.answers[p] = s.answers[p] || {};
+  document.querySelectorAll("[data-ans]").forEach((t) => { s.answers[p][t.dataset.ans] = t.value; });
+}
+
+/* ===================== 화면: 주제 + 쓰기 안내 ===================== */
+function topicCard(t) {
+  return `<div class="card">
+    <div class="small muted">오늘의 주제</div>
+    <div class="jua topic-title">${esc(t.title)}</div>
+    <p><b>❓ ${esc(t.question)}</b></p>
+    <p>${esc(t.situation)}</p>
+    <div class="starter">🧒 밍에게: ${esc(t.kid_explain)}</div>
+    <p class="small muted">💡 ${esc(t.from_answers)}</p>
+    ${t.words?.length ? `<p class="small">쓰면 좋은 낱말: ${t.words.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</p>` : ""}
+    <div class="badge-wrap" style="margin-top:8px">${badgeSVG(t.badge, null, 92)}<div><div class="small muted">오늘만의 배지</div><div class="jua" style="font-size:21px">${esc(t.badge?.name)}</div><div class="small">“${esc(t.badge?.motto)}”</div></div></div>
+  </div>`;
+}
+function viewWriting() {
+  const s = S.session; const t = s.topic; const p = S.tab;
+  const person = PEOPLE.find((x) => x.id === p);
+  const beginner = ls.get("fwr_beginner_" + p, p === "밍");
+  const e = s.entries[p] || {};
+  return `<div class="steps"><span class="on"></span><span class="on"></span><span class="${e.result ? "on" : ""}"></span><span></span></div>
+  ${topicCard(t)}
+  <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === p ? "on" : ""}" data-tab="${x.id}">${x.id}${s.entries[x.id]?.result ? " ✓" : ""}</div>`).join("")}</div>
+  ${e.result ? resultCard(p, e) : `
+  <div class="card">
+    <h2>📝 ${p}의 글쓰기 안내</h2>
+    <label class="toggle"><input type="checkbox" id="beginner" ${beginner ? "checked" : ""}> 🐣 초보 모드 (한 단계씩 안내하고 메모로 개요 짜기)</label>
+    <p class="small muted" style="margin-top:10px">${person.level === "child" ? "목표: 4문단, 10~15문장. 종이에 또박또박 써요. 글씨를 못 읽으면 점수가 깎여요!" : "목표: 4문단. 원인은 깊게, 해결책은 구체적으로. 글씨도 채점돼요."}</p>
+    ${beginner ? beginnerGuide(p, t, person.level) : compactGuide(t, person.level)}
+  </div>
+  <div class="card">
+    <h2>📷 다 썼으면 사진 올리기</h2>
+    <p class="small muted">종이 전체가 밝게, 똑바로 나오게 찍어 주세요. 여러 장이면 순서대로 골라 주세요(최대 4장).</p>
+    <div class="row">
+      <button class="ghost" id="camBtn">📸 사진 찍기</button>
+      <button class="ghost" id="galBtn">🖼️ 앨범에서 고르기</button>
+    </div>
+    <input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+    <input type="file" id="galIn" accept="image/*" multiple hidden>
+    <div class="thumbs" id="thumbs">${(S.pending?.[p] || []).map((src, i) => `<img src="${src}" alt="${i + 1}번째 사진">`).join("")}</div>
+    ${(S.pending?.[p] || []).length ? `<div class="row"><button class="line" id="clearPics">사진 지우기</button><button id="submitPics">✅ 선생님께 제출하기</button></div>` : ""}
+    ${errBox()}
+  </div>`}
+  ${awardBox(s)}`;
+}
+function compactGuide(t, level) {
+  const st = STARTERS[level];
+  return Object.keys(PART_LABELS).map((k) => `<div class="guide-part ${k}"><h3>${PART_LABELS[k]}</h3>
+    <ul class="clean">${(t.guide?.[k] || []).map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
+    <div class="starter">✍️ ${esc(st[k][0])}</div></div>`).join("");
+}
+function beginnerGuide(p, t, level) {
+  const st = STARTERS[level];
+  const step = (S.bstep?.[p]) ?? 0;
+  const keys = Object.keys(PART_LABELS);
+  const memo = ls.get(`fwr_memo_${S.session.id}_${p}`, {});
+  if (step >= keys.length) {
+    return `<div class="guide-part"><h3>🎉 개요 완성! 이제 종이에 옮겨 써요</h3>
+      ${keys.map((k) => `<p><b>${PART_LABELS[k]}</b><br>${esc(memo[k] || "(메모 없음)")}</p>`).join("")}
+      <p class="small muted">메모를 문장으로 늘려서 쓰고, 문단이 바뀔 때는 줄을 바꾸고 한 칸 들여 써요.</p>
+      <button class="line block" data-bstep="0">처음부터 다시 보기</button></div>`;
+  }
+  const k = keys[step];
+  const explain = {
+    intro: level === "child" ? "어떤 문제가 있는지 소개하고, 그걸 보고 어떤 마음이 들었는지 써요. 서론은 짧게!" : "문제 상황을 간결히 제시하고 느낀 점과 글의 방향을 밝힙니다.",
+    cause: level === "child" ? "그 문제가 왜 생겼을까요? 까닭을 1~2가지 찾아요." : "표면적 이유보다 근본 원인을 1~2가지 분석합니다.",
+    solution: level === "child" ? "어떻게 하면 해결될까요? 방법을 쓰고 꼭 '왜냐하면'으로 이유를 붙여요." : "원인에 대응하는 해결책을 이유·예시와 함께 제시합니다.",
+    conclusion: level === "child" ? "앞의 내용을 한 줄로 정리하고, 다시 이런 문제가 안 생기게 앞으로 어떻게 할지 다짐해요." : "요약하고 재발 방지를 위한 실천 계획으로 마무리합니다.",
+  }[k];
+  return `<div class="steps">${keys.map((_, i) => `<span class="${i <= step ? "on" : ""}"></span>`).join("")}</div>
+    <div class="guide-part ${k}"><h3>${step + 1}단계 · ${PART_LABELS[k]}</h3>
+      <p>${esc(explain)}</p>
+      <p class="small"><b>생각해 볼 질문</b></p><ul class="clean">${(t.guide?.[k] || []).map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
+      <p class="small"><b>이렇게 시작해 보세요</b></p>${st[k].map((x) => `<div class="starter">✍️ ${esc(x)}</div>`).join("")}
+      <label class="q">메모 (낱말이나 짧은 문장으로)</label>
+      <textarea id="memoIn" data-memo="${k}" placeholder="생각나는 것을 적어요">${esc(memo[k] || "")}</textarea>
+      <div class="row" style="margin-top:10px">${step ? `<button class="line" data-bstep="${step - 1}">← 이전</button>` : ""}<button data-bstep="${step + 1}">${step === keys.length - 1 ? "개요 완성 ✓" : "다음 단계 →"}</button></div>
+    </div>`;
+}
+
+/* ===================== 결과(첨삭) ===================== */
+function resultCard(p, e) {
+  const r = e.result;
+  const tx = esc(r.transcript || "").replace(/\[\?\]/g, "<mark>[?]</mark>");
+  return `<div class="card">
+    <h2>👩‍🏫 ${p}의 첨삭 결과</h2>
+    ${r.readable === false ? `<div class="err">글씨를 거의 읽을 수 없었어요. 글씨 점수가 크게 깎였어요. 더 또박또박, 밝은 곳에서 찍어 보세요.</div>` : ""}
+    <div style="display:flex;align-items:baseline;gap:8px"><span class="total">${r.total}</span><span class="muted">/ 100점 (${p === "밍" ? "초3~4 기준" : "어른 기준"})</span></div>
+    ${Object.entries(SCORE_LABELS).map(([k, [lab, max]]) => `<div class="score-row"><span>${lab}</span><div class="score-bar"><i style="width:${Math.round((r.scores?.[k] || 0) / max * 100)}%"></i></div><span class="small">${r.scores?.[k] ?? 0}/${max}</span></div>`).join("")}
+    <p class="small" style="margin-top:8px">${Object.entries(PART_LABELS).map(([k, l]) => `<span class="chip ${r.parts?.[k] === "있음" ? "done" : ""}">${l}: ${esc(r.parts?.[k] || "-")}</span>`).join("")}</p>
+    <h3 style="margin-top:12px">📄 인식한 글</h3>
+    <div class="transcript">${tx || "(인식한 글 없음)"}</div>
+    ${r.unreadable_count ? `<p class="small muted">읽지 못한 곳: ${r.unreadable_count}군데 <mark>[?]</mark></p>` : ""}
+    <h3 style="margin-top:12px">👍 잘한 점</h3><ul class="clean">${(r.praise || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h3>🔧 고칠 점</h3><ul class="clean">${(r.improve || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+    ${(r.corrections || []).length ? `<h3>✏️ 맞춤법·표현 고치기</h3><ul class="clean">${r.corrections.map((c) => `<li><s>${esc(c.from)}</s> → <b>${esc(c.to)}</b> <span class="small muted">${esc(c.why)}</span></li>`).join("")}</ul>` : ""}
+    ${r.rewrite_example ? `<h3>🌟 이렇게 고쳐 쓰면 더 좋아요</h3><div class="starter">${esc(r.rewrite_example)}</div>` : ""}
+    ${r.next_mission ? `<p><b>🎯 다음 미션:</b> ${esc(r.next_mission)}</p>` : ""}
+    <div class="starter">💬 ${esc(r.teacher_comment)}</div>
+    ${S.session.status !== "done" ? `<div style="margin-top:12px"><button class="line block" data-redo="${p}">사진 다시 제출하기</button></div>` : ""}
+  </div>`;
+}
+
+/* ===================== 시상 ===================== */
+function mingRate(doneSessions, limit = 10) {
+  const list = doneSessions.filter((s) => s.awards && s.entries?.["밍"]?.result).sort((a, b) => a.createdAt - b.createdAt).slice(-limit);
+  return { n: list.length, got: list.filter((s) => s.awards["밍"]).length };
+}
+function countBadges(done, id) {
+  const n = { gold: 0, silver: 0, challenge: 0 };
+  done.forEach((s) => { const a = s.awards?.[id]; if (a) n[a]++; });
+  return n;
+}
+function computeAwards(session, pastDone) {
+  const ranked = PEOPLE.filter((p) => session.entries[p.id]?.result)
+    .map((p) => ({ id: p.id, score: session.entries[p.id].result.total, hw: session.entries[p.id].result.scores?.handwriting || 0 }))
+    .sort((a, b) => b.score - a.score || b.hw - a.hw || (a.id === "밍" ? -1 : 1));
+  const awards = {}; const notes = {};
+  if (ranked[0]) awards[ranked[0].id] = "gold";
+  if (ranked[1]) awards[ranked[1].id] = "silver";
+  // 밍 보장 규칙: 최근 9번 중 배지가 7개 미만이면(=이번에 놓치면 70% 아래), 또는 자기 기준 60점 이상이면 도전 배지
+  const m = ranked.find((r) => r.id === "밍");
+  if (m && !awards["밍"]) {
+    const prev = mingRate(pastDone, 9);
+    const needed = prev.got < Math.ceil(MING_TARGET * Math.min(10, prev.n + 1));
+    if (m.score >= 60 || needed) { awards["밍"] = "challenge"; notes["밍"] = m.score >= 60 ? "자기 기준 60점 이상! 도전 배지" : "꾸준히 도전한 밍에게 도전 배지"; }
+  }
+  return { awards, ranked, notes };
+}
+function awardBox(s) {
+  const n = PEOPLE.filter((p) => s.entries[p.id]?.result).length;
+  if (s.status === "done") return "";
+  return `<div class="card"><h2>🏆 시상식</h2>
+    <p class="small muted">제출: ${PEOPLE.map((p) => `<span class="chip ${s.entries[p.id]?.result ? "done" : ""}">${p.id}${s.entries[p.id]?.result ? " ✓" : ""}</span>`).join("")}</p>
+    <p class="small muted">${n < 3 ? "세 사람이 모두 제출하면 시상식을 열 수 있어요. (2명만 했어도 열 수 있지만, 안 낸 사람은 배지가 없어요)" : "모두 제출했어요! 두근두근 🥁"}</p>
+    <button class="block" id="ceremony" ${n >= 2 ? "" : "disabled"}>🎉 시상식 열기</button></div>`;
+}
+function viewCeremony() {
+  const s = S.session; const r = s.ranking || [];
+  const order = [r[1], r[0], r[2]].filter(Boolean);
+  const h = { gold: 120, silver: 90, none: 60 };
+  return `<div class="steps"><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span></div>
+  <div class="card" style="text-align:center">
+    <div class="small muted">${esc(s.date)} · ${esc(s.topic.title)}</div>
+    <h2>🎉 오늘의 시상식</h2>
+    <div class="podium">${order.map((x) => { const a = s.awards[x.id]; const place = r.indexOf(x); const col = place === 0 ? "var(--gold)" : place === 1 ? "var(--silver)" : "#d9cbb8"; return `<div class="pl">
+      ${a ? badgeSVG(s.topic.badge, a, 84) : `<div style="font-size:40px">💪</div>`}
+      <div class="jua p-${x.id}" style="font-size:22px">${x.id}</div><div class="small">${x.score}점</div>
+      <div class="stand" style="background:${col};height:${place === 0 ? h.gold : place === 1 ? h.silver : h.none}px">${place + 1}등</div></div>`; }).join("")}</div>
+    ${Object.entries(s.awardNotes || {}).map(([k, v]) => `<div class="starter">🌱 ${esc(k)}: ${esc(v)}</div>`).join("")}
+    ${r.filter((x) => !s.awards[x.id]).map((x) => `<p class="small muted">${x.id}, 다음엔 꼭 배지를! 오늘도 끝까지 쓴 것이 멋져요.</p>`).join("")}
+  </div>
+  <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === S.tab ? "on" : ""}" data-tab="${x.id}">${x.id}</div>`).join("")}</div>
+  ${s.entries[S.tab]?.result ? resultCard(S.tab, s.entries[S.tab]) : `<div class="card muted">${S.tab}은(는) 이번에 제출하지 않았어요.</div>`}
+  <button class="ghost block" data-go="home">🏠 처음으로</button>`;
+}
+
+/* ===================== 배지함 / 기록 / 도움말 ===================== */
+async function viewBadges() {
+  const done = (await store.list()).filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
+  const rate = mingRate(done);
+  return `<div class="card"><h2>🏅 배지 보관함</h2><p class="small muted">밍 최근 10번: <span class="rate">${rate.got}/${rate.n}</span> (목표 70% 이상)</p></div>
+  ${PEOPLE.map((p) => { const mine = done.filter((s) => s.awards?.[p.id]); const n = countBadges(done, p.id); return `<div class="card">
+    <h3 class="p-${p.id}">${p.id} <span class="small muted">(${p.role})</span> · 🥇${n.gold} 🥈${n.silver}${n.challenge ? ` 🌱${n.challenge}` : ""}</h3>
+    ${mine.length ? `<div class="grid-badges">${mine.map((s) => `<div class="b">${badgeSVG(s.topic.badge, s.awards[p.id], 86)}<div>${esc(s.topic.badge?.name)}</div><div>${esc(s.date.slice(5))}</div></div>`).join("")}</div>` : `<p class="muted small">아직 배지가 없어요. 첫 배지에 도전!</p>`}
+  </div>`; }).join("")}`;
+}
+async function viewHistory() {
+  const all = (await store.list()).sort((a, b) => b.createdAt - a.createdAt);
+  if (!all.length) return `<div class="card"><h2>📚 기록</h2><p class="muted">아직 기록이 없어요.</p></div>`;
+  return `<div class="card"><h2>📚 지난 글쓰기</h2></div>` + all.map((s) => `<div class="card">
+    <div class="small muted">${esc(s.date)} · ${s.status === "done" ? "완료" : "진행 중"}</div>
+    <h3>${esc(s.topic?.title || "(주제 정하기 전)")}</h3>
+    ${s.awards ? `<p class="small">${PEOPLE.map((p) => `${p.id} ${s.entries[p.id]?.result ? s.entries[p.id].result.total + "점" : "-"} ${s.awards[p.id] === "gold" ? "🥇" : s.awards[p.id] === "silver" ? "🥈" : s.awards[p.id] === "challenge" ? "🌱" : ""}`).join(" · ")}</p>` : ""}
+    <div class="row"><button class="ghost" data-open="${esc(s.id)}">보기</button><button class="line" data-del="${esc(s.id)}">삭제</button></div></div>`).join("");
+}
+function viewHelp() {
+  return `<div class="card"><h2>❓ 논술 글은 이렇게 써요</h2>
+    <p>우리 가족 글은 <b>문제 해결형 논술</b>이에요. 네 덩어리(4문단)로 써요.</p>
+    <div class="guide-part intro"><h3>① 서론 — 문제와 내 마음</h3><p>어떤 문제가 있는지 소개하고, 그걸 보고 느낀 점을 써요. 서론은 짧게!</p></div>
+    <div class="guide-part cause"><h3>② 본론 1 — 원인</h3><p>그 문제가 왜 생겼는지 까닭을 1~2가지 찾아요. "첫째, 둘째"를 쓰면 정리가 잘 돼요.</p></div>
+    <div class="guide-part solution"><h3>③ 본론 2 — 해결 방법</h3><p>방법을 쓰고 꼭 이유를 붙여요. <b>방법 → 왜냐하면(이유) → 예를 들어(예) → 그러니까(정리)</b> 순서로 쓰면 튼튼한 문단이 돼요.</p></div>
+    <div class="guide-part conclusion"><h3>④ 결론 — 다시 안 생기게</h3><p>앞의 내용을 한 줄로 정리하고, 앞으로 어떻게 할지 다짐해요.</p></div>
+    <h3 style="margin-top:14px">문단 쓰기 비밀</h3>
+    <p>한 문단에는 <b>중심 문장</b>(가장 하고 싶은 말) 1개와 <b>뒷받침 문장</b>(이유, 예) 2~3개가 들어가요. 문단이 바뀌면 줄을 바꾸고 한 칸 들여 써요.</p>
+    <h3>점수표 (100점)</h3>
+    <p class="small">짜임 25 · 내용 25 · 문단·문장 20 · 맞춤법 15 · 글씨 15<br>밍은 초등 3~4학년 기준, 펄과 울은 어른 기준으로 각자 채점해서 순위를 정해요.</p>
+    <h3>배지 규칙</h3>
+    <p class="small">1등 🥇, 2등 🥈 배지는 그날 주제에 맞춘 하나뿐인 디자인이에요. 밍은 3등이어도 자기 기준 60점 이상이면 🌱 도전 배지를 받고, 최근 10번 중 7번 이상은 꼭 배지를 받을 수 있게 되어 있어요.</p>
+  </div>
+  <div class="card"><h3>⚙️ 설정</h3><p class="small muted">저장소: ${remoteStore ? "가족 공용(모든 기기에서 같이 보임)" : "이 기기만"}</p><button class="line" id="logout">가족 코드 다시 넣기</button></div>`;
+}
+
+/* ===================== 렌더 & 이벤트 ===================== */
+function loadingView(msg, emoji = "🤖") { return `<div class="card loading"><div class="big">${emoji}</div><p class="jua" style="font-size:20px">${esc(msg)}</p><div class="spinner"></div></div>`; }
+async function render() {
+  const app = $("#app");
+  document.querySelectorAll("nav.bottom button").forEach((b) => b.classList.toggle("on", b.dataset.go === S.view));
+  if (!familyCode || remoteStore === null) { app.innerHTML = viewCode(); return; }
+  if (S.busy) { app.innerHTML = loadingView(S.busy, S.busyEmoji); return; }
+  try {
+    if (S.view === "home") app.innerHTML = await viewHome();
+    else if (S.view === "badges") app.innerHTML = await viewBadges();
+    else if (S.view === "history") app.innerHTML = await viewHistory();
+    else if (S.view === "help") app.innerHTML = viewHelp();
+    else if (S.view === "session") {
+      const s = S.session;
+      app.innerHTML = s.status === "interview" ? viewInterview() : s.status === "writing" ? viewWriting() : viewCeremony();
+    }
+  } catch (e) {
+    app.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+    if (e.status === 401) { familyCode = ""; ls.set("fwr_code", ""); setTimeout(render, 1500); }
+  }
+}
+async function busy(msg, fn, emoji) {
+  S.busy = msg; S.busyEmoji = emoji; setErr(""); render();
+  try { await fn(); } catch (e) { setErr(e.message); } finally { S.busy = false; render(); }
+}
+
+/* 사진 줄이기 (긴 변 1600px, JPEG) */
+function shrink(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file); const img = new Image();
+    img.onload = () => {
+      const max = 1600; let { width: w, height: h } = img; const k = Math.min(1, max / Math.max(w, h));
+      const c = document.createElement("canvas"); c.width = Math.round(w * k); c.height = Math.round(h * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = () => reject(new Error("사진을 열 수 없어요. 다른 사진으로 해 주세요."));
+    img.src = url;
+  });
+}
+async function addPics(files) {
+  const p = S.tab; S.pending = S.pending || {}; S.pending[p] = S.pending[p] || [];
+  for (const f of files) { if (S.pending[p].length >= 4) break; S.pending[p].push(await shrink(f)); }
+  render();
+}
+
+document.addEventListener("click", async (ev) => {
+  const t = ev.target.closest("button,[data-tab],[data-go]");
+  if (!t) return;
+  if (t.dataset.go) { S.view = t.dataset.go; setErr(""); return render(); }
+  if (t.id === "codeOk") { const v = $("#codeIn").value; if (!v.trim()) return; setErr(""); try { await tryCode(v); } catch (e) { familyCode = ""; setErr(e.message); } return render(); }
+  if (t.id === "logout") { familyCode = ""; remoteStore = null; ls.set("fwr_code", ""); return render(); }
+  if (t.id === "startNew") { S.session = newSession(); S.tab = "밍"; S.view = "session"; await store.save(S.session); return render(); }
+  if (t.dataset.open) { S.session = await store.get(t.dataset.open); S.view = "session"; S.tab = "밍"; return render(); }
+  if (t.dataset.del) { if (confirm("이 기록을 삭제할까요? 배지도 같이 사라져요.")) { await store.remove(t.dataset.del); render(); } return; }
+  if (t.dataset.tab) {
+    if (S.session?.status === "interview") { collectAnswers(); store.save(S.session); }
+    S.tab = t.dataset.tab; setErr(""); return render();
+  }
+  if (t.id === "makeTopic") {
+    collectAnswers();
+    const s = S.session;
+    return busy("답변을 읽고 오늘의 주제를 고르는 중…", async () => {
+      const recent = (await store.list()).filter((x) => x.topic).sort((a, b) => b.createdAt - a.createdAt).slice(0, 10).map((x) => x.topic.title);
+      const answers = {};
+      PEOPLE.forEach((p) => { const a = s.answers[p.id] || {}; answers[`${p.id}(${p.role}${p.level === "child" ? ", 초3" : ""})`] = Object.fromEntries(s.questions.map((q) => [q.q, a[q.k] || ""])); });
+      s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date });
+      s.status = "writing"; await store.save(s);
+    }, "🤔");
+  }
+  if (t.dataset.bstep !== undefined) {
+    const m = $("#memoIn"); const p = S.tab;
+    if (m) { const key = `fwr_memo_${S.session.id}_${p}`; const memo = ls.get(key, {}); memo[m.dataset.memo] = m.value; ls.set(key, memo); }
+    S.bstep = S.bstep || {}; S.bstep[p] = Number(t.dataset.bstep); return render();
+  }
+  if (t.id === "camBtn") return $("#camIn").click();
+  if (t.id === "galBtn") return $("#galIn").click();
+  if (t.id === "clearPics") { S.pending[S.tab] = []; return render(); }
+  if (t.dataset.redo) { const s = S.session; delete s.entries[t.dataset.redo]; await store.save(s); return render(); }
+  if (t.id === "submitPics") {
+    const p = S.tab; const images = S.pending[p];
+    return busy(`${p}의 글씨를 읽고 첨삭하는 중… (1분쯤 걸려요)`, async () => {
+      const result = await api("/api/ai", { task: "judge", person: p, topic: S.session.topic, images });
+      const fresh = (await store.get(S.session.id)) || S.session; // 다른 기기에서 낸 결과 합치기
+      fresh.entries = { ...fresh.entries, [p]: { result, at: Date.now() } };
+      S.session = fresh; await store.save(fresh); S.pending[p] = [];
+    }, "👩‍🏫");
+  }
+  if (t.id === "ceremony") {
+    return busy("점수를 모으는 중…", async () => {
+      const all = await store.list();
+      const fresh = all.find((x) => x.id === S.session.id) || S.session;
+      const past = all.filter((x) => x.status === "done" && x.id !== fresh.id);
+      const { awards, ranked, notes } = computeAwards(fresh, past);
+      fresh.awards = awards; fresh.ranking = ranked; fresh.awardNotes = notes; fresh.status = "done";
+      S.session = fresh; S.tab = ranked[0]?.id || "밍"; await store.save(fresh);
+    }, "🥁");
+  }
+});
+document.addEventListener("change", (ev) => {
+  if (ev.target.id === "beginner") { ls.set("fwr_beginner_" + S.tab, ev.target.checked); render(); }
+  if (ev.target.id === "camIn" || ev.target.id === "galIn") { const fs = [...ev.target.files]; ev.target.value = ""; addPics(fs).catch((e) => { setErr(e.message); render(); }); }
+});
+document.addEventListener("input", (ev) => {
+  if (ev.target.id === "memoIn") { const key = `fwr_memo_${S.session.id}_${S.tab}`; const memo = ls.get(key, {}); memo[ev.target.dataset.memo] = ev.target.value; ls.set(key, memo); }
+  if (ev.target.dataset.ans !== undefined) { const s = S.session; s.answers[S.tab] = s.answers[S.tab] || {}; s.answers[S.tab][ev.target.dataset.ans] = ev.target.value; }
+});
+document.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.id === "codeIn") $("#codeOk").click(); });
+
+(async () => {
+  if (familyCode) { try { await tryCode(familyCode); } catch (e) { familyCode = ""; setErr(e.message); } }
+  render();
+})();
+</script>
+</body>
+</html>

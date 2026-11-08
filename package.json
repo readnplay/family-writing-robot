@@ -1,0 +1,11 @@
+{
+  "name": "family-writing-robot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "우리 가족 글쓰기 로봇 - 오늘의 글쓰기 주제, 손글씨 인식, 첨삭, 배지 모으기",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
+    "@upstash/redis": "^1.41.0"
+  }
+}

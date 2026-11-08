@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/ai.js": { "maxDuration": 300 },
+    "api/data.js": { "maxDuration": 30 }
+  }
+}
