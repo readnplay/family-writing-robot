@@ -82,7 +82,10 @@ nav.bottom button.on{color:var(--accent)}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .toggle{display:flex;align-items:center;gap:10px;background:var(--soft);padding:10px 12px;border-radius:12px;cursor:pointer}
 .toggle input{width:22px;height:22px}
-.rate{font-family:"Jua";font-size:20px}
+.stbl{width:100%;border-collapse:collapse;font-size:15px;text-align:center}
+.stbl th{font-weight:400;color:var(--sub);font-size:13px;padding:4px 2px}
+.stbl td{padding:7px 2px;border-top:1px solid var(--line)}
+nav.bottom button{min-width:0}
 ul.clean{margin:6px 0;padding-left:20px}
 @media (max-width:420px){ h1{font-size:24px} .topic-title{font-size:22px} .score-row{grid-template-columns:92px 1fr 48px} }
 </style>
@@ -99,6 +102,7 @@ ul.clean{margin:6px 0;padding-left:20px}
 <nav class="bottom" id="nav">
   <button data-go="home"><b>🏠</b>오늘</button>
   <button data-go="badges"><b>🏅</b>배지함</button>
+  <button data-go="scores"><b>📊</b>점수</button>
   <button data-go="history"><b>📚</b>기록</button>
   <button data-href="/blog.html"><b>📰</b>블로그</button>
   <button data-go="help"><b>❓</b>쓰는 법</button>
@@ -241,8 +245,10 @@ async function viewHome() {
     <button class="block" id="startNew">새 글쓰기 시작하기</button>
   </div>
   <div class="card">
-    <h2>🏅 배지 현황</h2>
-    <div class="row">${PEOPLE.map((p) => { const n = countBadges(done, p.id); return `<div style="text-align:center"><div class="jua p-${p.id}" style="font-size:22px">${p.id}</div><div class="small muted">${p.role}</div><div class="jua" style="font-size:20px">🥇${n.gold} 🥈${n.silver}${p.id === "밍" ? ` 🌱${n.challenge}` : ""}</div></div>`; }).join("")}</div>
+    <h2>🏅 배지 · 점수 현황</h2>
+    <div class="row" style="flex-wrap:nowrap;gap:6px">${PEOPLE.map((p) => { const n = countBadges(done, p.id); const st = scoreStats(done, p.id); return `<div style="text-align:center;flex:1 1 0;min-width:0"><div class="jua p-${p.id}" style="font-size:22px">${p.id}</div><div class="small muted">${p.role}</div><div class="jua" style="font-size:17px;white-space:nowrap">🥇${n.gold} 🥈${n.silver}${p.id === "밍" ? ` 🌱${n.challenge}` : ""}</div>
+      <div class="small">누적 <b>${st.sum}</b>점<br>평균 <b>${st.avg}</b>점</div></div>`; }).join("")}</div>
+    <div style="margin-top:12px"><button class="ghost block" data-go="scores">📊 점수 자세히 보기</button></div>
   </div>`;
 }
 function stageText(s) {
@@ -380,6 +386,16 @@ function mingRate(doneSessions, limit = 10) {
   const list = doneSessions.filter((s) => s.awards && s.entries?.["밍"]?.result).sort((a, b) => a.createdAt - b.createdAt).slice(-limit);
   return { n: list.length, got: list.filter((s) => s.awards["밍"]).length };
 }
+function scoreStats(done, id) {
+  const list = done.filter((s) => s.entries?.[id]?.result).sort((a, b) => (a.date || "").localeCompare(b.date || "") || a.createdAt - b.createdAt);
+  const totals = list.map((s) => s.entries[id].result.total || 0);
+  const sum = totals.reduce((a, b) => a + b, 0);
+  const cat = {};
+  Object.keys(SCORE_LABELS).forEach((k) => {
+    cat[k] = list.length ? list.reduce((a, s) => a + (s.entries[id].result.scores?.[k] || 0), 0) / list.length : 0;
+  });
+  return { n: list.length, sum, avg: list.length ? Math.round((sum / list.length) * 10) / 10 : 0, best: totals.length ? Math.max(...totals) : 0, list, cat };
+}
 function countBadges(done, id) {
   const n = { gold: 0, silver: 0, challenge: 0 };
   done.forEach((s) => { const a = s.awards?.[id]; if (a) n[a]++; });
@@ -430,6 +446,31 @@ function viewCeremony() {
   <button class="ghost block" data-go="home">🏠 처음으로</button>`;
 }
 
+/* ===================== 점수판 ===================== */
+async function viewScores() {
+  const done = (await store.list()).filter((s) => s.status === "done");
+  const stats = PEOPLE.map((p) => ({ p, st: scoreStats(done, p.id) }));
+  const awardIcon = (a) => (a === "gold" ? "🥇" : a === "silver" ? "🥈" : a === "challenge" ? "🌱" : "");
+  return `<div class="card"><h2>📊 점수판</h2>
+    <p class="small muted">밍은 초3~4 기준, 울과 펄은 어른 기준으로 매긴 자기 기준 점수예요. (한 번에 100점 만점)</p>
+    <table class="stbl"><thead><tr><th></th><th>횟수</th><th>누적</th><th>평균</th><th>최고</th></tr></thead><tbody>
+    ${stats.map(({ p, st }) => `<tr><td class="jua p-${p.id}">${p.id}</td><td>${st.n}회</td><td><b>${st.sum}</b>점</td><td><b>${st.avg}</b>점</td><td>${st.best}점</td></tr>`).join("")}
+    </tbody></table></div>
+  ${stats.map(({ p, st }) => `<div class="card">
+    <h3 class="p-${p.id}">${p.id} <span class="small muted">(${p.role})</span></h3>
+    <div class="row" style="text-align:center;margin:6px 0 10px">
+      <div><div class="small muted">누적 점수</div><div class="total">${st.sum}</div></div>
+      <div><div class="small muted">평균 점수</div><div class="total">${st.avg}</div></div>
+      <div><div class="small muted">최고 점수</div><div class="total" style="color:var(--ink)">${st.best}</div></div>
+    </div>
+    ${st.n ? `<p class="small" style="margin:0 0 4px"><b>항목별 평균</b></p>
+    ${Object.entries(SCORE_LABELS).map(([k, [lab, max]]) => `<div class="score-row"><span>${lab}</span><div class="score-bar"><i style="width:${Math.round(st.cat[k] / max * 100)}%"></i></div><span class="small">${Math.round(st.cat[k] * 10) / 10}/${max}</span></div>`).join("")}
+    <p class="small" style="margin:12px 0 4px"><b>회차별 점수</b></p>
+    <table class="stbl">${st.list.slice().reverse().map((s) => `<tr><td class="small">${esc(s.date.slice(5))}</td><td class="small" style="text-align:left">${esc(s.topic?.title || "")}</td><td><b>${s.entries[p.id].result.total}</b>점 ${awardIcon(s.awards?.[p.id])}</td></tr>`).join("")}</table>`
+    : `<p class="muted small">아직 점수가 없어요. 첫 글쓰기에 도전!</p>`}
+  </div>`).join("")}`;
+}
+
 /* ===================== 배지함 / 기록 / 도움말 ===================== */
 async function viewBadges() {
   const done = (await store.list()).filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
@@ -475,6 +516,7 @@ async function render() {
   try {
     if (S.view === "home") app.innerHTML = await viewHome();
     else if (S.view === "badges") app.innerHTML = await viewBadges();
+    else if (S.view === "scores") app.innerHTML = await viewScores();
     else if (S.view === "history") app.innerHTML = await viewHistory();
     else if (S.view === "help") app.innerHTML = viewHelp();
     else if (S.view === "session") {
