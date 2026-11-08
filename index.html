@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>가족 글쓰기 로봇</title>
+<title>쓰담이</title>
 <meta name="theme-color" content="#fff7ec">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,7 +91,7 @@ ul.clean{margin:6px 0;padding-left:20px}
 <div class="wrap">
   <header class="top">
     <div class="robot">🤖</div>
-    <div><h1>가족 글쓰기 로봇</h1><div class="sub">울 · 펄 · 밍의 오늘의 글쓰기</div></div>
+    <div><h1>쓰담이</h1><div class="sub">울 · 펄 · 밍의 말랑말랑 글쓰기 친구</div></div>
   </header>
   <div id="storeNotice"></div>
   <main id="app"></main>
@@ -258,10 +258,10 @@ async function viewHome() {
   ${open ? `<div class="card"><h2>✏️ 진행 중인 글쓰기</h2>
      <p>${esc(open.date)} · ${open.topic ? `<b>${esc(open.topic.title)}</b>` : "인터뷰 중"}</p>
      <p class="small muted">${stageText(open)}</p>
-     <div class="row"><button data-open="${esc(open.id)}">이어하기</button></div></div>` : ""}
+     <div class="row"><button data-open="${esc(open.id)}">이어하기</button><button class="line" data-del="${esc(open.id)}" data-inprogress="1">🗑️ 삭제</button></div></div>` : ""}
   <div class="card">
-    <h2>🤖 오늘의 글쓰기 시작</h2>
-    <p class="muted">로봇이 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
+    <h2>🤖 쓰담이와 글쓰기 시작</h2>
+    <p class="muted">쓰담이가 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
     <button class="block" id="startNew">새 글쓰기 시작하기</button>
   </div>
   <div class="card">
@@ -290,7 +290,7 @@ function viewInterview() {
   ${errBox()}
   <div class="card">
     <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount === 0 ? "· 한 명만 답해도 주제를 만들 수 있어요" : doneCount < 3 ? "· 지금 바로 주제를 만들 수 있어요!" : "· 모두 답했어요!"}</p>
-    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 오늘의 주제 정하기</button>
+    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 쓰담이, 주제 정해 줘!</button>
   </div>`;
 }
 function collectAnswers() {
@@ -542,7 +542,11 @@ document.addEventListener("click", async (ev) => {
   if (t.id === "logout") { familyCode = ""; remoteStore = null; ls.set("fwr_code", ""); return render(); }
   if (t.id === "startNew") { S.session = newSession(); S.tab = "밍"; S.view = "session"; await store.save(S.session); return render(); }
   if (t.dataset.open) { S.session = await store.get(t.dataset.open); S.view = "session"; S.tab = "밍"; return render(); }
-  if (t.dataset.del) { if (confirm("이 기록을 삭제할까요? 배지도 같이 사라져요.")) { await store.remove(t.dataset.del); render(); } return; }
+  if (t.dataset.del) {
+    const msg = t.dataset.inprogress ? "진행 중인 글쓰기를 삭제할까요? 인터뷰 답과 제출한 글이 모두 지워져요." : "이 기록을 삭제할까요? 배지도 같이 사라져요.";
+    if (confirm(msg)) { await store.remove(t.dataset.del); render(); }
+    return;
+  }
   if (t.dataset.tab) {
     if (S.session?.status === "interview") { collectAnswers(); store.save(S.session); }
     S.tab = t.dataset.tab; setErr(""); return render();
