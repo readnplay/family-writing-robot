@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>쓰담이</title>
+<title>또박이</title>
 <meta name="theme-color" content="#fff7ec">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -91,7 +91,7 @@ ul.clean{margin:6px 0;padding-left:20px}
 <div class="wrap">
   <header class="top">
     <div class="robot">🤖</div>
-    <div><h1>쓰담이</h1><div class="sub">울 · 펄 · 밍의 말랑말랑 글쓰기 친구</div></div>
+    <div><h1>또박이</h1><div class="sub">울 · 펄 · 밍의 말랑말랑 글쓰기 친구</div></div>
   </header>
   <div id="storeNotice"></div>
   <main id="app"></main>
@@ -100,9 +100,12 @@ ul.clean{margin:6px 0;padding-left:20px}
   <button data-go="home"><b>🏠</b>오늘</button>
   <button data-go="badges"><b>🏅</b>배지함</button>
   <button data-go="history"><b>📚</b>기록</button>
+  <button data-href="/blog.html"><b>📰</b>블로그</button>
   <button data-go="help"><b>❓</b>쓰는 법</button>
 </nav>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="/shared.js"></script>
 <script>
 /* ===================== 기본 설정 ===================== */
 const PEOPLE = [
@@ -149,7 +152,6 @@ const STARTERS = {
 
 /* ===================== 유틸 ===================== */
 const $ = (s, el = document) => el.querySelector(s);
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const ls = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
@@ -161,7 +163,6 @@ function seededPick(arr, n, seed) {
   for (let i = a.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = h % (i + 1); [a[i], a[j]] = [a[j], a[i]]; }
   return a.slice(0, n);
 }
-function safeColor(c, d) { return /^#[0-9a-fA-F]{6}$/.test(c || "") ? c : d; }
 
 /* ===================== 서버 통신 ===================== */
 let familyCode = ls.get("fwr_code", "");
@@ -192,31 +193,6 @@ const store = {
     ls.set("fwr_sessions", ls.get("fwr_sessions", []).filter((x) => x.id !== id));
   },
 };
-
-/* ===================== 배지 그림 ===================== */
-const TIER = { gold: { c: "#f5b301", t: "1등" }, silver: { c: "#a9b4bf", t: "2등" }, challenge: { c: "#3fb57a", t: "도전" } };
-function starPts(cx, cy, R, r, n = 5) { const p = []; for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n; const rad = i % 2 ? r : R; p.push(`${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`); } return p.join(" "); }
-function badgeSVG(b, tier, size = 110) {
-  b = b || {}; const id = "g" + Math.random().toString(36).slice(2, 9);
-  const c1 = safeColor(b.color1, "#ffb86b"), c2 = safeColor(b.color2, "#ff7a45");
-  const T = TIER[tier] || null; const ring = T ? T.c : "#d9cbb8";
-  const shapes = {
-    circle: `<circle cx="60" cy="56" r="42"/>`,
-    hexagon: `<polygon points="60,12 98,34 98,78 60,100 22,78 22,34"/>`,
-    shield: `<path d="M60 12 L98 25 V56 C98 80 81 94 60 102 C39 94 22 80 22 56 V25 Z"/>`,
-    star: `<polygon points="${starPts(60, 58, 48, 30)}"/>`,
-    flower: `<g>${[0, 60, 120, 180, 240, 300].map((a) => `<circle cx="${(60 + 24 * Math.cos(a * Math.PI / 180)).toFixed(1)}" cy="${(56 + 24 * Math.sin(a * Math.PI / 180)).toFixed(1)}" r="20"/>`).join("")}<circle cx="60" cy="56" r="26"/></g>`,
-  };
-  const shape = shapes[b.shape] || shapes.circle;
-  return `<svg width="${size}" height="${size * 1.18}" viewBox="0 0 120 142" role="img" aria-label="${esc((b.name || "배지") + (T ? " " + T.t : ""))}">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
-    ${T ? `<path d="M40 88 L30 136 L46 126 L56 138 L60 94 Z" fill="${ring}" opacity=".9"/><path d="M80 88 L90 136 L74 126 L64 138 L60 94 Z" fill="${ring}" opacity=".75"/>` : ""}
-    <g fill="${ring}" transform="translate(60 56) scale(1.13) translate(-60 -56)">${shape}</g>
-    <g fill="url(#${id})">${shape}</g>
-    <text x="60" y="70" text-anchor="middle" font-size="40">${esc(b.emoji || "✏️")}</text>
-    ${T ? `<rect x="36" y="${b.shape === "star" ? 98 : 92}" width="48" height="20" rx="10" fill="#fff" stroke="${ring}" stroke-width="3"/><text x="60" y="${b.shape === "star" ? 113 : 107}" text-anchor="middle" font-size="12" font-weight="700" fill="#333" font-family="Jua, sans-serif">${T.t}</text>` : ""}
-  </svg>`;
-}
 
 /* ===================== 상태 ===================== */
 let S = { view: "home", session: null, tab: "밍", busy: false, err: "" };
@@ -260,8 +236,8 @@ async function viewHome() {
      <p class="small muted">${stageText(open)}</p>
      <div class="row"><button data-open="${esc(open.id)}">이어하기</button><button class="line" data-del="${esc(open.id)}" data-inprogress="1">🗑️ 삭제</button></div></div>` : ""}
   <div class="card">
-    <h2>🤖 쓰담이와 글쓰기 시작</h2>
-    <p class="muted">쓰담이가 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
+    <h2>🤖 또박이와 글쓰기 시작</h2>
+    <p class="muted">또박이가 몇 가지 질문을 하면 울, 펄, 밍이 답해 주세요. 답을 듣고 오늘의 주제와 오늘만의 배지를 정해 줄게요.</p>
     <button class="block" id="startNew">새 글쓰기 시작하기</button>
   </div>
   <div class="card">
@@ -290,7 +266,7 @@ function viewInterview() {
   ${errBox()}
   <div class="card">
     <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount === 0 ? "· 한 명만 답해도 주제를 만들 수 있어요" : doneCount < 3 ? "· 지금 바로 주제를 만들 수 있어요!" : "· 모두 답했어요!"}</p>
-    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 쓰담이, 주제 정해 줘!</button>
+    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 또박이, 주제 정해 줘!</button>
   </div>`;
 }
 function collectAnswers() {
@@ -450,6 +426,7 @@ function viewCeremony() {
   </div>
   <div class="tabs">${PEOPLE.map((x) => `<div class="tab p-${x.id} ${x.id === S.tab ? "on" : ""}" data-tab="${x.id}">${x.id}</div>`).join("")}</div>
   ${s.entries[S.tab]?.result ? resultCard(S.tab, s.entries[S.tab]) : `<div class="card muted">${S.tab}은(는) 이번에 제출하지 않았어요.</div>`}
+  ${archiveCard(s)}
   <button class="ghost block" data-go="home">🏠 처음으로</button>`;
 }
 
@@ -469,7 +446,7 @@ async function viewHistory() {
     <div class="small muted">${esc(s.date)} · ${s.status === "done" ? "완료" : "진행 중"}</div>
     <h3>${esc(s.topic?.title || "(주제 정하기 전)")}</h3>
     ${s.awards ? `<p class="small">${PEOPLE.map((p) => `${p.id} ${s.entries[p.id]?.result ? s.entries[p.id].result.total + "점" : "-"} ${s.awards[p.id] === "gold" ? "🥇" : s.awards[p.id] === "silver" ? "🥈" : s.awards[p.id] === "challenge" ? "🌱" : ""}`).join(" · ")}</p>` : ""}
-    <div class="row"><button class="ghost" data-open="${esc(s.id)}">보기</button><button class="line" data-del="${esc(s.id)}">삭제</button></div></div>`).join("");
+    <div class="row"><button class="ghost" data-open="${esc(s.id)}">보기</button>${s.status === "done" ? `<button class="ghost" data-blog="${esc(s.id)}">📰 블로그</button>` : ""}<button class="line" data-del="${esc(s.id)}">삭제</button></div></div>`).join("");
 }
 function viewHelp() {
   return `<div class="card"><h2>❓ 논술 글은 이렇게 써요</h2>
@@ -585,7 +562,7 @@ document.addEventListener("click", async (ev) => {
     }, "👩‍🏫");
   }
   if (t.id === "ceremony") {
-    return busy("점수를 모으는 중…", async () => {
+    await busy("점수를 모으는 중…", async () => {
       const all = await store.list();
       const fresh = all.find((x) => x.id === S.session.id) || S.session;
       const past = all.filter((x) => x.status === "done" && x.id !== fresh.id);
@@ -593,8 +570,68 @@ document.addEventListener("click", async (ev) => {
       fresh.awards = awards; fresh.ranking = ranked; fresh.awardNotes = notes; fresh.status = "done";
       S.session = fresh; S.tab = ranked[0]?.id || "밍"; await store.save(fresh);
     }, "🥁");
+    if (S.session?.status === "done") archiveSession(S.session, true); // 블로그 올리기 + 메일 (뒤에서 진행)
+    return;
+  }
+  if (t.dataset.href) { window.open(t.dataset.href, "_blank"); return; }
+  if (t.dataset.blog) { window.open(`/blog.html?id=${encodeURIComponent(t.dataset.blog)}`, "_blank"); return; }
+  if (t.dataset.print || t.dataset.pdf || t.dataset.mail) {
+    const id = t.dataset.print || t.dataset.pdf || t.dataset.mail;
+    const s = S.session?.id === id ? S.session : await store.get(id);
+    if (!s) return;
+    if (t.dataset.print) return printA5(postFromSession(s));
+    if (t.dataset.pdf) { try { await a5PdfBase64(postFromSession(s), { save: true }); } catch (e) { alert(e.message); } return; }
+    return archiveSession(s, true);
   }
 });
+
+/* ===================== 블로그 올리기 · A5 인쇄 · 메일 ===================== */
+S.doc = {};
+function mailHTML(post) {
+  const link = `${location.origin}/blog.html?id=${encodeURIComponent(post.id)}`;
+  return `<p>${ROBOT_NAME}가 오늘의 가족 글쓰기를 보내 드려요. 첨부한 A5 PDF를 인쇄해서 연습장에 붙여 두세요. 📒</p>
+    <p>블로그에서 보기: <a href="${link}">${link}</a></p>${postBodyHTML(post)}`;
+}
+async function archiveSession(s, mail) {
+  const st = (S.doc[s.id] = { blog: "📰 블로그에 올리는 중…", mail: mail ? "📄 A5 PDF 만드는 중…" : "" });
+  render();
+  const post = postFromSession(s);
+  try {
+    if (!remoteStore) throw new Error("가족 공용 저장소가 연결되지 않아 블로그에 올리지 못했어요.");
+    await api("/api/data", { action: "publish", post });
+    st.blog = "✅ 블로그에 올렸어요 (기록을 지워도 블로그 글은 남아요)";
+    s.published = true; await store.save(s);
+  } catch (e) { st.blog = "❌ " + e.message; }
+  render();
+  if (!mail) return;
+  try {
+    const pdf = await a5PdfBase64(post);
+    st.mail = "📧 메일 보내는 중…"; render();
+    await api("/api/mail", { subject: `[${ROBOT_NAME}] ${post.date} ${post.topic.title}`, html: mailHTML(post), pdf, filename: `${post.date}_${post.topic.title}.pdf` });
+    st.mail = "✅ A5 PDF를 메일로 보냈어요";
+  } catch (e) {
+    st.mail = /메일 설정/.test(e.message) ? "📧 메일 설정이 아직 안 되어 있어요 (PDF 저장 버튼으로 받을 수 있어요)" : "❌ " + e.message;
+  }
+  render();
+}
+function printA5(post) {
+  const w = window.open("", "_blank");
+  if (!w) { alert("팝업이 막혀 있어요. 팝업을 허용해 주세요."); return; }
+  w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>${esc(post.date)} ${esc(post.topic.title)}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+    <style>${A5_CSS} body{margin:0;background:#eee} @media screen{.a5page{margin:10px auto;box-shadow:0 2px 8px rgba(0,0,0,.15)}}</style></head>
+    <body>${a5HTML(post)}<script>(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){setTimeout(function(){print()},400)})<\/script></body></html>`);
+  w.document.close();
+}
+function archiveCard(s) {
+  const st = S.doc[s.id] || {};
+  return `<div class="card"><h3>📦 기록 보관</h3>
+    <p class="small">${esc(st.blog || (s.published ? "✅ 블로그에 올라가 있어요" : ""))}${st.mail ? "<br>" + esc(st.mail) : ""}</p>
+    <div class="row"><button class="ghost" data-blog="${esc(s.id)}">📰 블로그 보기</button><button class="ghost" data-print="${esc(s.id)}">🖨️ A5 인쇄</button></div>
+    <div class="row" style="margin-top:8px"><button class="line" data-pdf="${esc(s.id)}">⬇️ PDF 저장</button><button class="line" data-mail="${esc(s.id)}">📧 다시 올리고 메일</button></div>
+  </div>`;
+}
 document.addEventListener("change", (ev) => {
   if (ev.target.id === "beginner") { ls.set("fwr_beginner_" + S.tab, ev.target.checked); render(); }
   if (ev.target.id === "camIn" || ev.target.id === "galIn") { const fs = [...ev.target.files]; ev.target.value = ""; addPics(fs).catch((e) => { setErr(e.message); render(); }); }

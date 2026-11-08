@@ -31,6 +31,16 @@ export default async function handler(req, res) {
       await redis.hset(KEY, { [session.id]: JSON.stringify(session) });
       return res.json({ configured: true, ok: true });
     }
+    if (action === "publish") {
+      const post = req.body.post;
+      if (!post || !post.id) return res.status(400).json({ error: "post.id 필요" });
+      await redis.hset("fwr:posts", { [post.id]: JSON.stringify(post) });
+      return res.json({ configured: true, ok: true });
+    }
+    if (action === "unpublish") {
+      await redis.hdel("fwr:posts", id);
+      return res.json({ configured: true, ok: true });
+    }
     if (action === "delete") {
       await redis.hdel(KEY, id);
       return res.json({ configured: true, ok: true });
