@@ -110,7 +110,7 @@ const PEOPLE = [
   { id: "펄", role: "엄마", level: "adult" },
   { id: "밍", role: "민결", level: "child" },
 ];
-const MING_TARGET = 0.7; // 밍은 10번 중 7번 이상 배지
+const MING_TARGET = 0.7;
 const SCORE_LABELS = { structure: ["짜임", 25], content: ["내용", 25], sentence: ["문단·문장", 20], spelling: ["맞춤법", 15], handwriting: ["글씨", 15] };
 const PART_LABELS = { intro: "서론", cause: "본론① 원인", solution: "본론② 해결", conclusion: "결론" };
 
@@ -416,7 +416,7 @@ function computeAwards(session, pastDone) {
   const awards = {}; const notes = {};
   if (ranked[0]) awards[ranked[0].id] = "gold";
   if (ranked[1]) awards[ranked[1].id] = "silver";
-  // 밍 보장 규칙: 최근 9번 중 배지가 7개 미만이면(=이번에 놓치면 70% 아래), 또는 자기 기준 60점 이상이면 도전 배지
+  // 도전 배지 규칙
   const m = ranked.find((r) => r.id === "밍");
   if (m && !awards["밍"]) {
     const prev = mingRate(pastDone, 9);
