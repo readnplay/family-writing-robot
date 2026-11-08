@@ -289,7 +289,7 @@ function viewInterview() {
   </div>
   ${errBox()}
   <div class="card">
-    <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount < 3 ? "· 세 사람 모두 답하면 더 좋은 주제가 나와요" : "· 모두 답했어요!"}</p>
+    <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount === 0 ? "· 한 명만 답해도 주제를 만들 수 있어요" : doneCount < 3 ? "· 지금 바로 주제를 만들 수 있어요!" : "· 모두 답했어요!"}</p>
     <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 오늘의 주제 정하기</button>
   </div>`;
 }
@@ -553,7 +553,11 @@ document.addEventListener("click", async (ev) => {
     return busy("답변을 읽고 오늘의 주제를 고르는 중…", async () => {
       const recent = (await store.list()).filter((x) => x.topic).sort((a, b) => b.createdAt - a.createdAt).slice(0, 10).map((x) => x.topic.title);
       const answers = {};
-      PEOPLE.forEach((p) => { const a = s.answers[p.id] || {}; answers[`${p.id}(${p.role}${p.level === "child" ? ", 초3" : ""})`] = Object.fromEntries(s.questions.map((q) => [q.q, a[q.k] || ""])); });
+      PEOPLE.forEach((p) => {
+        const a = s.answers[p.id] || {};
+        const qa = s.questions.filter((q) => (a[q.k] || "").trim()).map((q) => [q.q, a[q.k].trim()]);
+        if (qa.length) answers[`${p.id}(${p.role}${p.level === "child" ? ", 초3" : ""})`] = Object.fromEntries(qa);
+      });
       s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date });
       s.status = "writing"; await store.save(s);
     }, "🤔");
