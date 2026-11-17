@@ -601,7 +601,7 @@ function computeMedals(session, history = []) {
   const k = ranked.findIndex((r) => r.id === "밍");
   if (k > 0) {
     const h = history.filter((s) => s.medals?.["밍"]).sort((a, b) => a.createdAt - b.createdAt).slice(-9);
-    if (h.filter((s) => s.medals["밍"] === "gold").length < Math.ceil((h.length + 1) / 2)) ranked.unshift(ranked.splice(k, 1)[0]);
+    if (h.filter((s) => s.medals["밍"] === "gold").length < Math.ceil((h.length + 1) * 0.4)) ranked.unshift(ranked.splice(k, 1)[0]);
   }
   const order = ["gold", "silver", "bronze"]; const mult = session.event?.mult || 1;
   const medals = {}, points = {}, awards = {};
