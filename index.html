@@ -408,8 +408,15 @@ function viewInterview() {
   const s = S.session; const p = S.tab;
   const a = s.answers[p] || {};
   const doneCount = PEOPLE.filter((x) => hasAnswer(s, x.id)).length;
+  const req = s.request || {};
   return `<div class="steps"><span class="on"></span><span></span><span></span><span></span></div>
   ${eventBanner(s)}
+  <div class="card">
+    <h2>✏️ 쓰고 싶은 주제가 있나요?</h2>
+    <p class="small muted">있으면 적어 주세요. 또박이가 그 주제 그대로, 우리 글의 틀(서론·본론·본론·결론)에 맞게 다듬어 줄게요. 없으면 비워 두고 아래 인터뷰만 해도 돼요.</p>
+    <textarea id="wishTopic" placeholder="예: 내가 하고 싶은 음식점, 내가 키우고 싶은 동물, 우리 반 자랑">${esc(req.text || "")}</textarea>
+    <p class="small muted" style="margin:6px 0 0">${req.text ? `<b class="p-${esc(req.by)}">${esc(req.by)}</b>가 고른 주제예요.` : `적으면 지금 고른 사람(<b class="p-${p}">${p}</b>)의 주제로 기억해요.`}</p>
+  </div>
   <div class="card">
     <h2>🎤 오늘의 인터뷰</h2>
     <p class="small muted">먼저 누가 답하는지 이름을 고르세요. 모든 질문에 답하지 않아도 돼요. 고른 답을 다시 누르면 취소돼요.</p>
@@ -421,8 +428,8 @@ function viewInterview() {
   </div>
   ${errBox()}
   <div class="card">
-    <p class="small muted">답한 사람: ${doneCount}/3 ${doneCount === 0 ? "· 한 명만 답해도 주제를 만들 수 있어요" : doneCount < 3 ? "· 지금 바로 주제를 만들 수 있어요!" : "· 모두 답했어요!"}</p>
-    <button class="block" id="makeTopic" ${doneCount ? "" : "disabled"}>🤖 또박이, 주제 정해 줘!</button>
+    <p class="small muted">답한 사람: ${doneCount}/3 ${req.text ? "· 쓰고 싶은 주제로 만들어요!" : doneCount === 0 ? "· 한 명만 답해도, 주제만 적어도 만들 수 있어요" : doneCount < 3 ? "· 지금 바로 주제를 만들 수 있어요!" : "· 모두 답했어요!"}</p>
+    <button class="block" id="makeTopic" ${doneCount || (req.text || "").trim() ? "" : "disabled"}>🤖 또박이, 주제 정해 줘!</button>
   </div>`;
 }
 function collectAnswers() {
@@ -438,6 +445,7 @@ function topicCard(t) {
     <p><b>❓ ${esc(t.question)}</b></p>
     <p>${esc(t.situation)}</p>
     <div class="starter">🧒 밍에게: ${esc(t.kid_explain)}</div>
+    ${t.genre ? `<p class="small"><span class="chip">글의 갈래: ${esc(t.genre)}</span>${t.requested ? `<span class="chip done">✏️ ${esc(t.requested.by)}가 고른 주제</span>` : ""}</p>` : ""}
     <p class="small muted">💡 ${esc(t.from_answers)}</p>
     ${t.words?.length ? `<p class="small">쓰면 좋은 낱말: ${t.words.map((w) => `<span class="chip">${esc(w)}</span>`).join("")}</p>` : ""}
     <div class="badge-wrap" style="margin-top:8px">${badgeSVG(t.badge, null, 92)}<div><div class="small muted">오늘의 배지 · 🥇 금메달만 받아요</div><div class="jua" style="font-size:21px">${esc(t.badge?.name)}</div><div class="small">“${esc(t.badge?.motto)}”</div></div></div>
@@ -456,7 +464,7 @@ function viewWriting() {
   <div class="card">
     <h2>📝 ${p}의 글쓰기 안내</h2>
     <label class="toggle"><input type="checkbox" id="beginner" ${beginner ? "checked" : ""}> 🐣 초보 모드 (한 단계씩 안내하고 메모로 개요 짜기)</label>
-    <p class="small muted" style="margin-top:10px">${person.level === "child" ? "목표: 4문단, 10~15문장. 종이에 또박또박 써요. 글씨를 못 읽으면 점수가 깎여요!" : "목표: 4문단. 원인은 깊게, 해결책은 구체적으로. 글씨도 채점돼요."}</p>
+    <p class="small muted" style="margin-top:10px">${person.level === "child" ? "목표: 4문단, 10~15문장. 종이에 또박또박 써요. 글씨를 못 읽으면 점수가 깎여요!" : "목표: 4문단. 문단마다 중심 문장과 이유·예를 갖추고, 구체적으로. 글씨도 채점돼요."}</p>
     ${beginner ? beginnerGuide(p, t, person.level) : compactGuide(t, person.level)}
   </div>
   <div class="card">
@@ -474,38 +482,54 @@ function viewWriting() {
   </div>`}
   ${awardBox(s)}`;
 }
+/* 글의 짜임: 주제가 따로 정한 짜임(parts)이 있으면 그것을, 없으면 기본(문제 해결 논술)을 씀 */
+const DEFAULT_EXPLAIN = {
+  intro: ["어떤 문제가 있는지 소개하고, 그걸 보고 어떤 마음이 들었는지 써요. 서론은 짧게!", "문제 상황을 간결히 제시하고 느낀 점과 글의 방향을 밝힙니다."],
+  cause: ["그 문제가 왜 생겼을까요? 까닭을 1~2가지 찾아요.", "표면적 이유보다 근본 원인을 1~2가지 분석합니다."],
+  solution: ["어떻게 하면 해결될까요? 방법을 쓰고 꼭 '왜냐하면'으로 이유를 붙여요.", "원인에 대응하는 해결책을 이유·예시와 함께 제시합니다."],
+  conclusion: ["앞의 내용을 한 줄로 정리하고, 다시 이런 문제가 안 생기게 앞으로 어떻게 할지 다짐해요.", "요약하고 재발 방지를 위한 실천 계획으로 마무리합니다."],
+};
+const PART_CLASS = ["intro", "cause", "solution", "conclusion"];
+function partsOf(t, level = "child") {
+  const child = level === "child";
+  if (Array.isArray(t?.parts) && t.parts.length) {
+    return t.parts.map((x, i) => ({
+      key: x.key || "p" + (i + 1), label: x.label || `${i + 1}문단`, cls: PART_CLASS[i] || "",
+      explain: (child ? x.child : x.adult) || x.child || "", questions: x.questions || [],
+      starters: (child ? x.starters_child : x.starters_adult) || x.starters_child || [],
+    }));
+  }
+  return Object.keys(PART_LABELS).map((k) => ({
+    key: k, label: PART_LABELS[k], cls: k, explain: DEFAULT_EXPLAIN[k][child ? 0 : 1],
+    questions: t?.guide?.[k] || [], starters: STARTERS[level][k],
+  }));
+}
+function partLabelMap(t) { const m = {}; partsOf(t).forEach((x) => { m[x.key] = x.label; }); return m; }
 function compactGuide(t, level) {
-  const st = STARTERS[level];
-  return Object.keys(PART_LABELS).map((k) => `<div class="guide-part ${k}"><h3>${PART_LABELS[k]}</h3>
-    <ul class="clean">${(t.guide?.[k] || []).map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
-    <div class="starter">✍️ ${esc(st[k][0])}</div></div>`).join("");
+  return partsOf(t, level).map((x) => `<div class="guide-part ${x.cls}"><h3>${esc(x.label)}</h3>
+    <p class="small">${esc(x.explain)}</p>
+    <ul class="clean">${x.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
+    ${x.starters[0] ? `<div class="starter">✍️ ${esc(x.starters[0])}</div>` : ""}</div>`).join("");
 }
 function beginnerGuide(p, t, level) {
-  const st = STARTERS[level];
+  const parts = partsOf(t, level);
   const step = (S.bstep?.[p]) ?? 0;
-  const keys = Object.keys(PART_LABELS);
   const memo = ls.get(`fwr_memo_${S.session.id}_${p}`, {});
-  if (step >= keys.length) {
+  if (step >= parts.length) {
     return `<div class="guide-part"><h3>🎉 개요 완성! 이제 종이에 옮겨 써요</h3>
-      ${keys.map((k) => `<p><b>${PART_LABELS[k]}</b><br>${esc(memo[k] || "(메모 없음)")}</p>`).join("")}
+      ${parts.map((x) => `<p><b>${esc(x.label)}</b><br>${esc(memo[x.key] || "(메모 없음)")}</p>`).join("")}
       <p class="small muted">메모를 문장으로 늘려서 쓰고, 문단이 바뀔 때는 줄을 바꾸고 한 칸 들여 써요.</p>
       <button class="line block" data-bstep="0">처음부터 다시 보기</button></div>`;
   }
-  const k = keys[step];
-  const explain = {
-    intro: level === "child" ? "어떤 문제가 있는지 소개하고, 그걸 보고 어떤 마음이 들었는지 써요. 서론은 짧게!" : "문제 상황을 간결히 제시하고 느낀 점과 글의 방향을 밝힙니다.",
-    cause: level === "child" ? "그 문제가 왜 생겼을까요? 까닭을 1~2가지 찾아요." : "표면적 이유보다 근본 원인을 1~2가지 분석합니다.",
-    solution: level === "child" ? "어떻게 하면 해결될까요? 방법을 쓰고 꼭 '왜냐하면'으로 이유를 붙여요." : "원인에 대응하는 해결책을 이유·예시와 함께 제시합니다.",
-    conclusion: level === "child" ? "앞의 내용을 한 줄로 정리하고, 다시 이런 문제가 안 생기게 앞으로 어떻게 할지 다짐해요." : "요약하고 재발 방지를 위한 실천 계획으로 마무리합니다.",
-  }[k];
-  return `<div class="steps">${keys.map((_, i) => `<span class="${i <= step ? "on" : ""}"></span>`).join("")}</div>
-    <div class="guide-part ${k}"><h3>${step + 1}단계 · ${PART_LABELS[k]}</h3>
-      <p>${esc(explain)}</p>
-      <p class="small"><b>생각해 볼 질문</b></p><ul class="clean">${(t.guide?.[k] || []).map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
-      <p class="small"><b>이렇게 시작해 보세요</b></p>${st[k].map((x) => `<div class="starter">✍️ ${esc(x)}</div>`).join("")}
+  const x = parts[step]; const k = x.key;
+  return `<div class="steps">${parts.map((_, i) => `<span class="${i <= step ? "on" : ""}"></span>`).join("")}</div>
+    <div class="guide-part ${x.cls}"><h3>${step + 1}단계 · ${esc(x.label)}</h3>
+      <p>${esc(x.explain)}</p>
+      <p class="small"><b>생각해 볼 질문</b></p><ul class="clean">${x.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>
+      <p class="small"><b>이렇게 시작해 보세요</b></p>${x.starters.map((s2) => `<div class="starter">✍️ ${esc(s2)}</div>`).join("")}
       <label class="q">메모 (낱말이나 짧은 문장으로)</label>
       <textarea id="memoIn" data-memo="${k}" placeholder="생각나는 것을 적어요">${esc(memo[k] || "")}</textarea>
-      <div class="row" style="margin-top:10px">${step ? `<button class="line" data-bstep="${step - 1}">← 이전</button>` : ""}<button data-bstep="${step + 1}">${step === keys.length - 1 ? "개요 완성 ✓" : "다음 단계 →"}</button></div>
+      <div class="row" style="margin-top:10px">${step ? `<button class="line" data-bstep="${step - 1}">← 이전</button>` : ""}<button data-bstep="${step + 1}">${step === parts.length - 1 ? "개요 완성 ✓" : "다음 단계 →"}</button></div>
     </div>`;
 }
 
@@ -524,8 +548,8 @@ function correctionList(r) {
   return `<ul class="clean">${r.corrections.map((c, i) => `<li><b class="cxn">${CIRCLED[i] || i + 1}</b> <s>${esc(c.from)}</s> → <b>${esc(c.to)}</b> ${c.type ? `<span class="chip">${esc(c.type)}</span>` : ""}<span class="small muted">${esc(c.why)}</span></li>`).join("")}</ul>`;
 }
 function sortComments(list) {
-  const order = { intro: 0, cause: 1, solution: 2, conclusion: 3, whole: 4 };
-  return list.slice().sort((a, b) => (order[a.part] ?? 5) - (order[b.part] ?? 5));
+  const order = { whole: 9 }; partsOf(S.session?.topic).forEach((x, i) => { order[x.key] = i; });
+  return list.slice().sort((a, b) => (order[a.part] ?? 9) - (order[b.part] ?? 9));
 }
 function resultCard(p, e) {
   const r = e.result;
@@ -534,14 +558,14 @@ function resultCard(p, e) {
     ${r.readable === false ? `<div class="err">글씨를 거의 읽을 수 없었어요. 글씨 점수가 크게 깎였어요. 더 또박또박, 밝은 곳에서 찍어 보세요.</div>` : ""}
     <div style="display:flex;align-items:baseline;gap:8px"><span class="total">${r.total}</span><span class="muted">/ 100점 (${p === "밍" ? "초3~4 기준" : "어른 기준"})</span></div>
     ${Object.entries(SCORE_LABELS).map(([k, [lab, max]]) => `<div class="score-row"><span>${lab}</span><div class="score-bar"><i style="width:${Math.round((r.scores?.[k] || 0) / max * 100)}%"></i></div><span class="small">${r.scores?.[k] ?? 0}/${max}</span></div>`).join("")}
-    <p class="small" style="margin-top:8px">${Object.entries(PART_LABELS).map(([k, l]) => `<span class="chip ${r.parts?.[k] === "있음" ? "done" : ""}">${l}: ${esc(r.parts?.[k] || "-")}</span>`).join("")}</p>
+    <p class="small" style="margin-top:8px">${partsOf(S.session?.topic).map((x) => `<span class="chip ${r.parts?.[x.key] === "있음" ? "done" : ""}">${esc(x.label)}: ${esc(r.parts?.[x.key] || "-")}</span>`).join("")}</p>
     <div class="starter" style="margin-top:12px">💬 ${esc(r.teacher_comment)}</div>
     ${r.last_mission_check ? `<p class="small"><b>🔁 지난 미션 확인:</b> ${esc(r.last_mission_check)}</p>` : ""}
     <h3 style="margin-top:12px">👍 잘한 점</h3><ul class="clean">${(r.praise || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     <h3 style="margin-top:12px">✍️ 첨삭지</h3>
     <p class="small muted" style="margin:0 0 6px">물결 밑줄과 번호가 있는 곳을 다시 살펴봐요.${r.unreadable_count ? ` 읽지 못한 곳은 <mark>[?]</mark>로 표시했어요 (${r.unreadable_count}군데).` : ""}</p>
     <div class="transcript">${markedTranscript(r) || "(인식한 글 없음)"}</div>
-    ${(r.comments || []).length ? `<h3 style="margin-top:12px">📝 선생님 메모</h3>${sortComments(r.comments).map((c) => `<div class="memo"><span class="chip">${esc(PART_LABELS[c.part] || "글 전체")}</span> ${c.type === "칭찬" ? "👍" : c.type === "질문" ? "❓" : "💡"}${c.quote ? ` <span class="q">“${esc(c.quote)}”</span>` : ""}<div>${esc(c.text)}</div></div>`).join("")}` : ""}
+    ${(r.comments || []).length ? `<h3 style="margin-top:12px">📝 선생님 메모</h3>${sortComments(r.comments).map((c) => `<div class="memo"><span class="chip">${esc(partLabelMap(S.session?.topic)[c.part] || "글 전체")}</span> ${c.type === "칭찬" ? "👍" : c.type === "질문" ? "❓" : "💡"}${c.quote ? ` <span class="q">“${esc(c.quote)}”</span>` : ""}<div>${esc(c.text)}</div></div>`).join("")}` : ""}
     <h3 style="margin-top:12px">🔧 고칠 점 <span class="small muted">(중요한 것부터)</span></h3><ul class="clean">${(r.improve || []).map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
     ${(r.corrections || []).length ? (p === "밍"
       ? `<details class="fix"><summary>✏️ 번호 붙은 곳을 먼저 스스로 고쳐 보고, 눌러서 정답 확인!</summary>${correctionList(r)}</details>`
@@ -690,6 +714,8 @@ function viewHelp() {
     <p>한 문단에는 <b>중심 문장</b>(가장 하고 싶은 말) 1개와 <b>뒷받침 문장</b>(이유, 예) 2~3개가 들어가요. 문단이 바뀌면 줄을 바꾸고 한 칸 들여 써요.</p>
     <h3>점수표 (100점)</h3>
     <p class="small">짜임 25 · 내용 25 · 문단·문장 20 · 맞춤법 15 · 글씨 15<br>밍은 초등 3~4학년 기준, 펄과 울은 어른 기준으로 각자 채점해서 순위를 정해요.</p>
+    <h3>쓰고 싶은 주제가 있을 때</h3>
+    <p class="small">인터뷰 맨 위 칸에 쓰고 싶은 주제를 적으면, 또박이가 그 주제를 그대로 살려서 우리 글의 틀(서론·본론·본론·결론)에 맞게 다듬어 줘요. 주제에 따라 의견 글, 계획·상상 글, 소개 글, 경험 글로 짜임이 조금씩 달라지고, 초보 모드 안내와 첨삭도 그 짜임에 맞춰져요.</p>
     <h3>메달과 배지</h3>
     <p class="small">글 점수 순서대로 🥇 금메달, 🥈 은메달, 🥉 동메달을 받아요. 그날 주제에 맞춘 하나뿐인 배지는 🥇 금메달을 딴 사람만 받아요.</p>
     <h3>시즌 규칙</h3>
@@ -790,7 +816,10 @@ document.addEventListener("click", async (ev) => {
         const qa = s.questions.filter((q) => (a[q.k] || "").trim()).map((q) => [q.q, a[q.k].trim()]);
         if (qa.length) answers[`${p.id}(${p.role}${p.level === "child" ? ", 초3" : ""})`] = Object.fromEntries(qa);
       });
-      s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date });
+      const w = document.getElementById("wishTopic");
+      if (w) s.request = w.value.trim() ? { by: (s.request && s.request.text ? s.request.by : S.tab), text: w.value.trim() } : null;
+      const requested = s.request?.text ? { by: s.request.by, text: s.request.text } : null;
+      s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date, requested });
       s.status = "writing"; await store.save(s);
     }, "🤔");
   }
@@ -902,6 +931,10 @@ document.addEventListener("change", (ev) => {
   if (ev.target.id === "camIn" || ev.target.id === "galIn") { const fs = [...ev.target.files]; ev.target.value = ""; addPics(fs).catch((e) => { setErr(e.message); render(); }); }
 });
 document.addEventListener("input", (ev) => {
+  if (ev.target.id === "wishTopic" && S.session) {
+    const v = ev.target.value; const old = S.session.request;
+    S.session.request = v.trim() ? { by: old && old.text ? old.by : S.tab, text: v } : null;
+  }
   if (ev.target.id === "memoIn") { const key = `fwr_memo_${S.session.id}_${S.tab}`; const memo = ls.get(key, {}); memo[ev.target.dataset.memo] = ev.target.value; ls.set(key, memo); }
   if (ev.target.dataset.ans !== undefined) { const s = S.session; s.answers[S.tab] = s.answers[S.tab] || {}; s.answers[S.tab][ev.target.dataset.ans] = ev.target.value; }
 });

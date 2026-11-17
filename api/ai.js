@@ -51,54 +51,84 @@ async function ask({ system, content, effort }) {
   return extractJSON(text);
 }
 
-async function makeTopic({ answers, recentTopics, date }) {
+const GENRES = `글의 갈래와 4문단 짜임 (모두 우리 가족의 틀 "서론 · 본론① · 본론② · 결론"을 지킨다)
+1. 문제 해결 글(기본): 서론(문제 상황과 느낀 점) · 본론①(원인 1~2가지) · 본론②(해결 방법 + 왜냐하면) · 결론(정리와 다시 안 생기게 하는 다짐)
+2. 의견 글: 서론(내 의견 밝히기) · 본론①(첫째 이유 + 예) · 본론②(둘째 이유 + 예) · 결론(의견 다시 강조와 다짐)
+3. 계획·상상 글("~한다면", 꿈, 만들고 싶은 것): 서론(하고 싶은 것과 그 까닭) · 본론①(구체적인 모습: 무엇을, 어떻게) · 본론②(어려울 점과 해결 방법, 또는 잘되게 하는 방법 + 왜냐하면) · 결론(바람과 다짐)
+4. 소개·설명 글: 서론(무엇을 소개하는지, 관심 끌기) · 본론①(특징과 모습) · 본론②(좋은 점이나 방법 + 까닭) · 결론(정리와 느낌)
+5. 경험 글: 서론(언제·어디서·누구와) · 본론①(있었던 일을 차례대로) · 본론②(그때의 마음과 생각, 까닭) · 결론(깨달은 점과 앞으로)
+어느 갈래든 본론에는 반드시 "왜냐하면"으로 이유를 붙일 자리가 있어야 한다(3~4학년 성취기준: 의견과 그렇게 생각한 이유).`;
+
+async function makeTopic({ answers, recentTopics, date, requested }) {
+  const req = requested && requested.text ? requested : null;
   const system = `${TEACHER}
 
-지금 할 일: 가족의 오늘 인터뷰 답변을 보고, 세 사람이 같은 주제로 쓸 "오늘의 글쓰기 주제"를 하나 정합니다.
-- 주제는 반드시 "문제 → 원인 → 해결 → 재발 방지" 구조로 쓸 수 있는 생활 속 문제여야 합니다.
-- 가족의 답변(날씨, 기분, 관심사, 겪은 일)에서 실마리를 찾아 연결하세요. 밍이 직접 겪어 봤거나 쉽게 상상할 수 있어야 합니다.
-- 답변이 한 사람 것뿐이어도 괜찮습니다. 그 답변만으로 세 사람 모두 쓸 수 있는 주제를 만드세요. from_answers에는 누구의 답에서 골랐는지 적으세요.
+지금 할 일: 세 사람이 같은 주제로 쓸 "오늘의 글쓰기 주제"를 하나 정하고, 그 주제에 맞는 4문단 짜임과 문단별 안내를 만듭니다.
+${req ? `- 오늘은 ${req.by}가 직접 쓰고 싶은 주제를 골랐습니다. 이 주제가 가장 중요합니다.
+  · 고른 주제의 대상과 내용을 바꾸거나 다른 주제로 바꾸지 마세요. 주제 이름에 그 낱말이 그대로 들어가게 하세요.
+  · 그 주제에 가장 잘 맞는 갈래를 아래에서 고르고, 우리 가족의 4문단 틀 안에서 쓸 수 있도록 글쓰기 질문을 다듬으세요.
+  · 엄마, 아빠도 같은 주제로 쓸 수 있게 질문을 열어 두세요(예: "내가 음식점을 연다면").
+  · 아이에게 맞지 않는 내용(폭력, 위험 등)이면 뜻을 살리되 안전한 방향으로 살짝만 다듬고 from_answers에 그 까닭을 쓰세요.
+  · 인터뷰 답이 있으면 예나 실마리로만 쓰세요.` : `- 가족의 인터뷰 답(날씨, 기분, 관심사, 겪은 일)에서 실마리를 찾아 주제를 정하세요. 기본 갈래는 "문제 해결 글"입니다. 밍이 직접 겪어 봤거나 쉽게 상상할 수 있어야 합니다.
+- 답이 한 사람 것뿐이어도 세 사람 모두 쓸 수 있는 주제를 만드세요. from_answers에는 누구의 답에서 골랐는지 적으세요.`}
 - 너무 무겁거나 무서운 주제(죽음, 범죄, 재난 등)는 피하고, 최근 주제와 겹치지 않게 하세요.
 - 배지는 오늘 주제를 상징하는 하나뿐인 디자인입니다. 이모지 1개, 어울리는 색 2개(#RRGGBB), 모양, 짧은 배지 이름(8자 이내)을 정하세요.
 
+${GENRES}
+
+parts에는 고른 갈래의 4문단을 순서대로 key "p1"~"p4"로 넣으세요. 각 문단마다:
+- label: 화면에 보일 이름 (예: "서론 — 하고 싶은 음식점", "본론① 메뉴와 모습")
+- child: 밍(초3)에게 그 문단에서 무엇을 쓰는지 쉬운 말로 1~2문장
+- adult: 어른에게 같은 내용을 정확하게 1문장
+- questions: 이 주제에 맞춘, 생각을 끌어내는 질문 2개
+- starters_child: 초3이 따라 쓸 문장 시작 예시 2~3개(빈칸은 ○○)
+- starters_adult: 어른용 문장 시작 예시 2개
+
 반드시 아래 JSON 하나만 출력하세요. 다른 말은 쓰지 마세요.
 {
-  "title": "주제 (예: 겨울 아침에 일어나기 힘든 문제)",
-  "question": "글쓰기 질문 한 문장 (예: 겨울 아침에 일어나기 힘든 까닭은 무엇이고, 어떻게 하면 좋을까요?)",
-  "situation": "문제 상황 설명 2~3문장",
-  "from_answers": "가족 답변 중 어떤 이야기에서 이 주제를 뽑았는지 1~2문장",
+  "title": "주제",
+  "genre": "문제 해결 글|의견 글|계획·상상 글|소개·설명 글|경험 글",
+  "question": "글쓰기 질문 한 문장",
+  "situation": "주제 설명 2~3문장",
+  "from_answers": "이 주제가 어디서 나왔는지 1~2문장",
   "kid_explain": "밍(초3)에게 쉬운 말로 주제를 설명하는 2문장",
-  "guide": {
-    "intro": ["서론에서 생각할 질문 2개"],
-    "cause": ["원인을 찾는 질문 2개"],
-    "solution": ["해결 방법을 찾는 질문 2개"],
-    "conclusion": ["결론(재발 방지 다짐)을 위한 질문 2개"]
-  },
+  "parts": [{ "key": "p1", "label": "", "child": "", "adult": "", "questions": ["", ""], "starters_child": ["", ""], "starters_adult": ["", ""] }],
   "words": ["글에 쓰면 좋은 낱말 5개"],
   "badge": { "name": "배지 이름", "emoji": "이모지 1개", "color1": "#RRGGBB", "color2": "#RRGGBB", "shape": "circle|shield|star|hexagon|flower", "motto": "배지에 새길 짧은 말(12자 이내)" }
 }`;
   const text = `오늘 날짜: ${date}
 최근 주제(겹치지 않게): ${(recentTopics || []).join(" / ") || "없음"}
-
+${req ? `
+${req.by}가 쓰고 싶은 주제: "${String(req.text).slice(0, 200)}"
+` : ""}
 가족 인터뷰 답변:
-${JSON.stringify(answers, null, 2)}`;
-  return ask({ system, content: [{ type: "text", text }], effort: "low" });
+${JSON.stringify(answers || {}, null, 2)}`;
+  const t = await ask({ system, content: [{ type: "text", text }], effort: "low" });
+  if (!Array.isArray(t.parts) || t.parts.length !== 4) delete t.parts;
+  else t.parts = t.parts.map((x, i) => ({ ...x, key: "p" + (i + 1) }));
+  if (req) t.requested = { by: req.by, text: String(req.text).slice(0, 200) };
+  return t;
 }
 
 async function judge({ person, topic, images, prevMission }) {
+  const parts = Array.isArray(topic.parts) && topic.parts.length === 4 ? topic.parts : null;
+  const keys = parts ? parts.map((x) => x.key) : ["intro", "cause", "solution", "conclusion"];
+  const shape = parts ? `이번 글의 갈래: ${topic.genre || ""}
+이번 글의 짜임(기본 짜임 대신 이것으로 평가):
+${parts.map((x) => `- ${x.key} ${x.label}: ${x.adult || x.child}`).join("\n")}` : "이번 글의 짜임: 기본(서론·원인·해결·결론)";
   const level = person === "밍" ? "밍(민결, 2017년생 초3 겨울) — 초등 3~4학년 기준" : `${person === "펄" ? "펄(엄마)" : "울(아빠)"} — 성인 기준`;
   const system = `${TEACHER}
 
 지금 할 일: 사진 속 손글씨 글을 읽고(글자 인식), 첨삭하고, 점수를 매깁니다.
 1) 글자 인식: 사진의 손글씨를 보이는 그대로 옮겨 적으세요. 맞춤법이나 띄어쓰기를 고치지 마세요(채점해야 하므로). 읽을 수 없는 글자나 낱말은 [?]로 표시하세요. 문단이 바뀌면 줄을 바꾸세요. 사진에 글이 없거나 거의 읽을 수 없으면 readable을 false로 하세요.
 2) 채점(합계 100점). 반드시 글쓴이의 수준 기준에 맞춰, 그 수준에서 얼마나 잘했는지로 점수를 주세요.
-   - structure(25): 서론·본론(원인, 해결)·결론 짜임이 있는가
-   - content(25): 원인 찾기, 해결 방법과 그 이유, 재발 방지 다짐이 알찬가, 주제에 맞는가
+   - structure(25): 아래 "이번 글의 짜임" 4문단이 갖춰졌는가
+   - content(25): 각 문단에 들어갈 내용이 알찬가, "왜냐하면"으로 이유를 댔는가, 주제에서 벗어나지 않았는가
    - sentence(20): 문단(중심 문장+뒷받침 문장)과 문장이 자연스러운가
    - spelling(15): 맞춤법과 띄어쓰기
    - handwriting(15): 다른 사람이 읽기 쉬운 글씨인가. [?]가 많을수록 감점. 거의 못 읽으면 0~3점.
 3) 첨삭 — 연구에 근거한 원칙을 반드시 지키세요.
-   ① 순서: 내용·짜임(주제, 원인-해결의 연결, 문단 구성) 같은 큰 문제를 먼저, 문장(주술 호응, 낱말 선택)을 다음, 맞춤법·띄어쓰기를 마지막에 다룹니다.
+   ① 순서: 내용·짜임(주제, 문단 사이의 연결, 문단 구성) 같은 큰 문제를 먼저, 문장(주술 호응, 낱말 선택)을 다음, 맞춤법·띄어쓰기를 마지막에 다룹니다.
    ② 개수 제한: 모든 오류를 고치지 마세요. 큰 고칠 점은 ${person === "밍" ? "2개" : "2~3개"}, 맞춤법·문장 교정(corrections)은 최대 ${person === "밍" ? "4개" : "5개"}만, 반복되거나 뜻을 흐리는 것 위주로 고르세요.
    ③ 구체성: 막연한 말("더 자세히") 대신 원문을 짧게 인용하고 어디를, 왜, 어떻게 고칠지 말하세요.
    ④ 질문으로 생각 끌어내기: comments 중 일부는 스스로 답을 찾게 하는 질문으로 쓰세요(예: "왜 그렇게 생각했는지 한 문장 더 붙이면 어떨까요?").
@@ -112,12 +142,12 @@ async function judge({ person, topic, images, prevMission }) {
   "readable": true,
   "transcript": "인식한 글 원문 그대로",
   "unreadable_count": 0,
-  "parts": { "intro": "있음|약함|없음", "cause": "있음|약함|없음", "solution": "있음|약함|없음", "conclusion": "있음|약함|없음" },
+  "parts": { ${keys.map((k) => `"${k}": "있음|약함|없음"`).join(", ")} },
   "scores": { "structure": 0, "content": 0, "sentence": 0, "spelling": 0, "handwriting": 0 },
   "total": 0,
   "praise": ["잘한 점 2~3개"],
   "improve": ["고칠 점 1~3개"],
-  "comments": [{ "part": "intro|cause|solution|conclusion|whole", "quote": "원문에서 그대로 따온 짧은 부분(없으면 빈 문자열)", "type": "칭찬|질문|제안", "text": "여백 첨삭 메모" }],
+  "comments": [{ "part": "${keys.join("|")}|whole", "quote": "원문에서 그대로 따온 짧은 부분(없으면 빈 문자열)", "type": "칭찬|질문|제안", "text": "여백 첨삭 메모" }],
   "corrections": [{ "from": "원문에 실제로 있는 틀린 표현(그대로 복사)", "to": "고친 표현", "type": "맞춤법|띄어쓰기|낱말|문장", "why": "짧은 이유" }],
   "revision_task": { "target": "다시 써 볼 원문 부분(인용)", "how": "어떻게 고쳐 쓸지", "hint": "도움이 되는 힌트나 시작 말" },
   "last_mission_check": "지난 미션을 지켰는지 한 문장 (지난 미션이 없으면 빈 문자열)",
@@ -137,6 +167,7 @@ async function judge({ person, topic, images, prevMission }) {
     text: `글쓴이: ${level}
 오늘의 주제: ${topic.title}
 글쓰기 질문: ${topic.question}
+${shape}
 지난번 미션: ${prevMission ? String(prevMission).slice(0, 300) : "없음"}
 사진 ${content.length}장은 순서대로 이어지는 한 편의 글입니다.`,
   });
