@@ -82,6 +82,20 @@ nav.bottom button.on{color:var(--accent)}
 @keyframes bob{50%{transform:translateY(-8px)}}
 .toggle{display:flex;align-items:center;gap:10px;background:var(--soft);padding:10px 12px;border-radius:12px;cursor:pointer}
 .toggle input{width:22px;height:22px}
+.shelf{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pm{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;padding:2px 9px;border-radius:999px;background:#f7f1e8;color:var(--sub);border:1px solid var(--line);white-space:nowrap}
+.pm.win{background:#fff4cc;border-color:#f5b301;color:#7a5a00}
+.pm b{font-family:"Jua",sans-serif;font-weight:400;color:var(--ink)}
+.cab-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.cab-name{font-size:22px;width:30px;flex:0 0 30px;text-align:center}
+.cabinet{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 6px;flex:1;min-width:0}
+.plaque{flex:0 0 84px;text-align:center;background:linear-gradient(180deg,#fffaf0,#f3e6cf);border:1px solid #e3cfa8;border-radius:14px;padding:6px 4px;box-shadow:0 2px 6px rgba(120,80,30,.12)}
+.plaque.win{background:linear-gradient(180deg,#fff7d6,#ffdf85);border-color:#f5b301}
+.plaque.now{background:#fff;border:2px dashed var(--line);box-shadow:none}
+.plaque .sn{font-family:"Jua",sans-serif;font-size:14px}
+.plaque .tr{font-size:28px;line-height:36px;height:36px}
+.plaque .md{font-size:12.5px;line-height:1.55}
+.plaque .pt{font-size:11.5px;color:var(--sub);margin-top:2px}
 .opts{display:flex;flex-wrap:wrap;gap:8px}
 .opt{background:#fff;color:var(--ink);border:2px solid var(--line);font-family:"Gowun Dodum",sans-serif;font-size:16px;padding:8px 12px;min-height:42px;border-radius:999px;flex:0 0 auto}
 .opt.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -282,18 +296,20 @@ function seasonInfo(all) {
   const games = done.filter((s) => s.season === season);
   return { season, played: games.length, remaining: SEASON_GAMES - games.length, games, ...standings(games) };
 }
-function trophies(all) {
-  const done = seasonSessions(all); const list = [];
-  const seasons = [...new Set(done.map((s) => s.season))].sort((a, b) => a - b);
-  seasons.forEach((n) => {
+/* 끝난 시즌 기록: 글쓰기 기록에서 계산 + 시즌이 끝날 때 따로 저장해 둔 기록(지워져도 남음) */
+function seasonRecords(all, m) {
+  const map = {}; const done = seasonSessions(all);
+  [...new Set(done.map((s) => s.season))].forEach((n) => {
     const games = done.filter((s) => s.season === n);
     if (games.length < SEASON_GAMES) return;
-    const { points } = standings(games);
-    const top = Math.max(...Object.values(points));
-    list.push({ season: n, winners: PEOPLE.filter((p) => points[p.id] === top).map((p) => p.id), points });
+    const st = standings(games); const top = Math.max(...Object.values(st.points));
+    map[n] = { season: n, points: st.points, medals: st.medals, winners: PEOPLE.filter((p) => st.points[p.id] === top).map((p) => p.id) };
   });
-  return list;
+  Object.values(m?.seasons || {}).forEach((r) => { if (r && r.season) map[r.season] = r; });
+  return Object.values(map).sort((a, b) => a.season - b.season);
 }
+function trophies(all, m) { return seasonRecords(all, m); }
+const md = (r, id) => (r.medals && r.medals[id]) || { gold: 0, silver: 0, bronze: 0 };
 /* 뒤처진 사람이 20점에 못 미칠 것 같으면 가끔 2배·3배 경기 */
 function rollEvent(info) {
   if (!info || info.played < 3 || info.remaining <= 0) return null;
@@ -365,7 +381,8 @@ async function viewHome() {
   const all = await store.list();
   const open = all.filter((s) => s.status !== "done").sort((a, b) => b.createdAt - a.createdAt)[0];
   const info = seasonInfo(all); const m = await meta.get();
-  const tro = trophies(all); const lastTrophy = tro[tro.length - 1];
+  const tro = trophies(all, m); const lastTrophy = tro[tro.length - 1];
+  const past = tro.filter((r) => r.season < info.season);
   const rows = wishCards(info, m);
   const unused = allWishes(all, m).filter((w) => !w.used);
   return `
@@ -392,6 +409,7 @@ async function viewHome() {
         <div class="small"><b class="jua" style="font-size:19px">${pts}점</b> · 🥇${info.medals[p.id].gold} 🥈${info.medals[p.id].silver} 🥉${info.medals[p.id].bronze}</div>
         <div class="score-bar" style="margin:4px 0"><i style="width:${Math.min(100, Math.round(((pts % WISH_POINTS) || (earned ? WISH_POINTS : 0)) / WISH_POINTS * 100))}%;background:#c77dff"></i></div>
         <div class="small muted">${earned ? `🧞 소원권 ${earned}장 · ` : ""}다음 소원까지 ${toNext}점</div>
+        ${past.length ? `<div class="shelf">${past.map((r) => { const w = r.winners.includes(p.id); const x = md(r, p.id); return `<span class="pm ${w ? "win" : ""}"><b>시즌${r.season}</b>${w ? "🏆" : ""} 🥇${x.gold} 🥈${x.silver} 🥉${x.bronze}</span>`; }).join("")}</div>` : ""}
       </div></div>`).join("")}
     <p class="small muted" style="margin:8px 0 0">금 3점 · 은 2점 · 동 1점 · ${WISH_POINTS}점마다 소원 1개 · 시즌 1등은 🏆 트로피</p>
     <div style="margin-top:10px" class="row"><button class="ghost" data-go="badges">🏅 배지·트로피</button><button class="ghost" data-go="scores">📊 글 점수</button></div>
@@ -681,11 +699,22 @@ async function viewScores() {
 async function viewBadges() {
   const all = await store.list();
   const done = all.filter((s) => s.status === "done").sort((a, b) => b.createdAt - a.createdAt);
-  const tro = trophies(all); const m = await meta.get();
+  const m = await meta.get(); const tro = trophies(all, m); const info = seasonInfo(all);
   const wishes = Object.entries(m.wishes || {}).map(([k, v]) => ({ season: k.split("-")[0], id: k.split("-")[1], ...v })).sort((a, b) => b.at - a.at);
+  const plaques = (p) => [...tro.filter((r) => r.season < info.season).map((r) => {
+      const w = r.winners.includes(p.id); const x = md(r, p.id);
+      return `<div class="plaque ${w ? "win" : ""}"><div class="sn">시즌 ${r.season}</div><div class="tr">${w ? "🏆" : ""}</div>
+        <div class="md">🥇×${x.gold}<br>🥈×${x.silver}<br>🥉×${x.bronze}</div><div class="pt">${r.points?.[p.id] ?? 0}점${w ? " · 우승" : ""}</div></div>`; }),
+    `<div class="plaque now"><div class="sn">시즌 ${info.season}</div><div class="tr" style="font-size:20px;line-height:36px">✏️</div>
+      <div class="md">🥇×${info.medals[p.id].gold}<br>🥈×${info.medals[p.id].silver}<br>🥉×${info.medals[p.id].bronze}</div><div class="pt">${info.points[p.id]}점 · 진행 중</div></div>`].join("");
   return `<div class="card"><h2>🏆 트로피 진열장</h2>
     ${tro.length ? `<div class="grid-badges">${tro.map((t) => `<div class="b"><div style="font-size:54px">🏆</div><div class="jua" style="font-size:17px;color:var(--ink)">시즌 ${t.season}</div><div>${t.winners.join(", ")} 우승</div></div>`).join("")}</div>`
       : `<p class="muted small">아직 트로피가 없어요. 시즌(${SEASON_GAMES}편)을 마치면 1등에게 트로피를 줘요!</p>`}
+    <p class="small muted" style="margin:8px 0 0">트로피는 시즌이 끝날 때 따로 저장돼서, 기록을 지워도 계속 남아요.</p>
+  </div>
+  <div class="card"><h2>🏛️ 메달 장식장</h2>
+    <p class="small muted">시즌마다 모은 메달이 한 칸씩 쌓여요. 옆으로 밀어서 지난 시즌도 볼 수 있어요.</p>
+    ${PEOPLE.map((p) => `<div class="cab-row"><div class="jua p-${p.id} cab-name">${p.id}</div><div class="cabinet">${plaques(p)}</div></div>`).join("")}
   </div>
   ${wishes.length ? `<div class="card"><h3>🧞 이룬 소원</h3><ul class="clean">${wishes.map((w) => `<li><b class="p-${w.id}">${esc(w.id)}</b> · 시즌 ${esc(w.season)} · ${esc(w.text)}</li>`).join("")}</ul></div>` : ""}
   <div class="card"><h2>🏅 배지 보관함</h2><p class="small muted">배지는 그날 🥇 금메달을 딴 사람만 받아요.</p></div>
@@ -863,6 +892,11 @@ document.addEventListener("click", async (ev) => {
         winners: PEOPLE.filter((p) => cur.points[p.id] === top).map((p) => p.id),
         newWishes: PEOPLE.filter((p) => Math.floor(cur.points[p.id] / WISH_POINTS) > Math.floor(before.points[p.id] / WISH_POINTS)).map((p) => p.id),
       };
+      if (complete) { // 시즌 기록과 트로피를 따로 영구 저장
+        const mm = await meta.get(); mm.seasons = mm.seasons || {};
+        mm.seasons[before.season] = { season: before.season, points: cur.points, medals: cur.medals, winners: S.seasonResult.winners, at: Date.now() };
+        await meta.set(mm);
+      }
       S.session = fresh; S.tab = ranked[0]?.id || "밍";
     }, "🥁");
     if (S.session?.status === "done" && S.seasonResult?.id === S.session.id) archiveSession(S.session, true); // 블로그 올리기 + 메일 (뒤에서 진행)
