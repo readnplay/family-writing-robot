@@ -819,7 +819,8 @@ document.addEventListener("click", async (ev) => {
       const w = document.getElementById("wishTopic");
       if (w) s.request = w.value.trim() ? { by: (s.request && s.request.text ? s.request.by : S.tab), text: w.value.trim() } : null;
       const requested = s.request?.text ? { by: s.request.by, text: s.request.text } : null;
-      s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date, requested });
+      const recentBadges = (await store.list()).filter((x) => x.topic?.badge).sort((a, b) => b.createdAt - a.createdAt).slice(0, 6).map((x) => ({ shape: x.topic.badge.shape, pattern: x.topic.badge.pattern }));
+      s.topic = await api("/api/ai", { task: "topic", answers, recentTopics: recent, date: s.date, requested, recentBadges });
       s.status = "writing"; await store.save(s);
     }, "🤔");
   }

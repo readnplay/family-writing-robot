@@ -59,7 +59,7 @@ const GENRES = `글의 갈래와 4문단 짜임 (모두 우리 가족의 틀 "�
 5. 경험 글: 서론(언제·어디서·누구와) · 본론①(있었던 일을 차례대로) · 본론②(그때의 마음과 생각, 까닭) · 결론(깨달은 점과 앞으로)
 어느 갈래든 본론에는 반드시 "왜냐하면"으로 이유를 붙일 자리가 있어야 한다(3~4학년 성취기준: 의견과 그렇게 생각한 이유).`;
 
-async function makeTopic({ answers, recentTopics, date, requested }) {
+async function makeTopic({ answers, recentTopics, date, requested, recentBadges }) {
   const req = requested && requested.text ? requested : null;
   const system = `${TEACHER}
 
@@ -72,7 +72,8 @@ ${req ? `- 오늘은 ${req.by}가 직접 쓰고 싶은 주제를 골랐습니다
   · 인터뷰 답이 있으면 예나 실마리로만 쓰세요.` : `- 가족의 인터뷰 답(날씨, 기분, 관심사, 겪은 일)에서 실마리를 찾아 주제를 정하세요. 기본 갈래는 "문제 해결 글"입니다. 밍이 직접 겪어 봤거나 쉽게 상상할 수 있어야 합니다.
 - 답이 한 사람 것뿐이어도 세 사람 모두 쓸 수 있는 주제를 만드세요. from_answers에는 누구의 답에서 골랐는지 적으세요.`}
 - 너무 무겁거나 무서운 주제(죽음, 범죄, 재난 등)는 피하고, 최근 주제와 겹치지 않게 하세요.
-- 배지는 오늘 주제를 상징하는 하나뿐인 디자인입니다. 이모지 1개, 어울리는 색 2개(#RRGGBB), 모양, 짧은 배지 이름(8자 이내)을 정하세요.
+- 배지는 오늘 주제를 상징하는 하나뿐인 디자인입니다. 이모지 1개, 어울리는 색 2개(#RRGGBB), 모양, 무늬, 짧은 배지 이름(8자 이내)을 정하세요.
+- 배지 모양은 14가지(circle 원, shield 방패, star 별, hexagon 육각형, flower 꽃, heart 하트, diamond 마름모, octagon 팔각형, burst 햇살, cloud 구름, crown 왕관, drop 물방울, square 둥근 네모, pentagon 오각형), 무늬는 5가지(none 없음, dots 물방울무늬, stripes 줄무늬, rays 햇살무늬, ring 동그라미 테) 중에서 주제에 어울리게 고르세요. 최근 배지와 같은 모양·무늬·색 조합은 쓰지 말고, 매번 다른 느낌이 나게 하세요.
 
 ${GENRES}
 
@@ -94,10 +95,11 @@ parts에는 고른 갈래의 4문단을 순서대로 key "p1"~"p4"로 넣으세�
   "kid_explain": "밍(초3)에게 쉬운 말로 주제를 설명하는 2문장",
   "parts": [{ "key": "p1", "label": "", "child": "", "adult": "", "questions": ["", ""], "starters_child": ["", ""], "starters_adult": ["", ""] }],
   "words": ["글에 쓰면 좋은 낱말 5개"],
-  "badge": { "name": "배지 이름", "emoji": "이모지 1개", "color1": "#RRGGBB", "color2": "#RRGGBB", "shape": "circle|shield|star|hexagon|flower", "motto": "배지에 새길 짧은 말(12자 이내)" }
+  "badge": { "name": "배지 이름", "emoji": "이모지 1개", "color1": "#RRGGBB", "color2": "#RRGGBB", "shape": "circle|shield|star|hexagon|flower|heart|diamond|octagon|burst|cloud|crown|drop|square|pentagon", "pattern": "none|dots|stripes|rays|ring", "motto": "배지에 새길 짧은 말(12자 이내)" }
 }`;
   const text = `오늘 날짜: ${date}
 최근 주제(겹치지 않게): ${(recentTopics || []).join(" / ") || "없음"}
+최근 배지(모양·무늬가 겹치지 않게): ${(recentBadges || []).map((b) => `${b.shape || "circle"}/${b.pattern || "none"}`).join(", ") || "없음"}
 ${req ? `
 ${req.by}가 쓰고 싶은 주제: "${String(req.text).slice(0, 200)}"
 ` : ""}

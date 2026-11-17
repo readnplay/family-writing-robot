@@ -13,6 +13,9 @@ const AWARD_TEXT = { gold: "🥇 금메달", silver: "🥈 은메달", bronze: "
 /* ---------- 배지 그림 ---------- */
 const TIER = { gold: { c: "#f5b301", t: "1등" }, silver: { c: "#a9b4bf", t: "2등" }, challenge: { c: "#3fb57a", t: "도전" } };
 function starPts(cx, cy, R, r, n = 5) { const p = []; for (let i = 0; i < n * 2; i++) { const a = -Math.PI / 2 + i * Math.PI / n; const rad = i % 2 ? r : R; p.push(`${(cx + rad * Math.cos(a)).toFixed(1)},${(cy + rad * Math.sin(a)).toFixed(1)}`); } return p.join(" "); }
+function polyPts(n, r, rot = -90, cx = 60, cy = 56) { const p = []; for (let i = 0; i < n; i++) { const a = (rot + i * 360 / n) * Math.PI / 180; p.push(`${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`); } return p.join(" "); }
+const BADGE_SHAPES = ["circle", "shield", "star", "hexagon", "flower", "heart", "diamond", "octagon", "burst", "cloud", "crown", "drop", "square", "pentagon"];
+const BADGE_PATTERNS = ["none", "dots", "stripes", "rays", "ring"];
 function badgeSVG(b, tier, size = 110) {
   b = b || {}; const id = "g" + Math.random().toString(36).slice(2, 9);
   const c1 = safeColor(b.color1, "#ffb86b"), c2 = safeColor(b.color2, "#ff7a45");
@@ -23,13 +26,29 @@ function badgeSVG(b, tier, size = 110) {
     shield: `<path d="M60 12 L98 25 V56 C98 80 81 94 60 102 C39 94 22 80 22 56 V25 Z"/>`,
     star: `<polygon points="${starPts(60, 58, 48, 30)}"/>`,
     flower: `<g>${[0, 60, 120, 180, 240, 300].map((a) => `<circle cx="${(60 + 24 * Math.cos(a * Math.PI / 180)).toFixed(1)}" cy="${(56 + 24 * Math.sin(a * Math.PI / 180)).toFixed(1)}" r="20"/>`).join("")}<circle cx="60" cy="56" r="26"/></g>`,
+    heart: `<path d="M60 100 C22 74 14 46 30 32 C42 22 56 28 60 40 C64 28 78 22 90 32 C106 46 98 74 60 100 Z"/>`,
+    diamond: `<polygon points="60,8 106,56 60,104 14,56"/>`,
+    octagon: `<polygon points="${polyPts(8, 46, -67.5)}"/>`,
+    burst: `<polygon points="${starPts(60, 56, 48, 38, 12)}"/>`,
+    cloud: `<g><circle cx="38" cy="64" r="22"/><circle cx="60" cy="46" r="28"/><circle cx="84" cy="62" r="22"/><circle cx="60" cy="72" r="26"/></g>`,
+    crown: `<path d="M16 38 L36 60 L60 22 L84 60 L104 38 L96 96 Q60 104 24 96 Z"/>`,
+    drop: `<path d="M60 8 C72 28 100 50 100 72 C100 92 82 104 60 104 C38 104 20 92 20 72 C20 50 48 28 60 8 Z"/>`,
+    square: `<rect x="16" y="12" width="88" height="88" rx="22"/>`,
+    pentagon: `<polygon points="${polyPts(5, 50)}"/>`,
   };
   const shape = shapes[b.shape] || shapes.circle;
+  const pat = {
+    dots: [30, 45, 60, 75, 90].flatMap((x, i) => [18, 33, 48, 63, 78, 93].map((y) => `<circle cx="${x + (y / 15 % 2 ? 7 : 0)}" cy="${y}" r="3"/>`)).join(""),
+    stripes: [-40, -22, -4, 14, 32, 50, 68, 86, 104].map((x) => `<rect x="${x}" y="0" width="8" height="140" transform="rotate(30 60 56)"/>`).join(""),
+    rays: Array.from({ length: 12 }, (_, i) => `<polygon points="60,56 ${(60 + 80 * Math.cos(i * Math.PI / 6)).toFixed(1)},${(56 + 80 * Math.sin(i * Math.PI / 6)).toFixed(1)} ${(60 + 80 * Math.cos(i * Math.PI / 6 + 0.22)).toFixed(1)},${(56 + 80 * Math.sin(i * Math.PI / 6 + 0.22)).toFixed(1)}"/>`).join(""),
+    ring: `<circle cx="60" cy="56" r="31" fill="none" stroke="#fff" stroke-width="4"/><circle cx="60" cy="56" r="24" fill="none" stroke="#fff" stroke-width="1.5"/>`,
+  }[b.pattern] || "";
   return `<svg width="${size}" height="${size * 1.18}" viewBox="0 0 120 142" role="img" aria-label="${esc((b.name || "배지") + (T ? " " + T.t : ""))}">
-    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs>
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient><clipPath id="${id}c">${shape.replace(/<\/?g>/g, "")}</clipPath></defs>
     ${T ? `<path d="M40 88 L30 136 L46 126 L56 138 L60 94 Z" fill="${ring}" opacity=".9"/><path d="M80 88 L90 136 L74 126 L64 138 L60 94 Z" fill="${ring}" opacity=".75"/>` : ""}
     <g fill="${ring}" transform="translate(60 56) scale(1.13) translate(-60 -56)">${shape}</g>
     <g fill="url(#${id})">${shape}</g>
+    ${pat ? `<g clip-path="url(#${id}c)" fill="#fff" opacity=".22">${pat}</g>` : ""}
     <text x="60" y="70" text-anchor="middle" font-size="40">${esc(b.emoji || "✏️")}</text>
     ${T ? `<rect x="36" y="${b.shape === "star" ? 98 : 92}" width="48" height="20" rx="10" fill="#fff" stroke="${ring}" stroke-width="3"/><text x="60" y="${b.shape === "star" ? 113 : 107}" text-anchor="middle" font-size="12" font-weight="700" fill="#333" font-family="Jua, sans-serif">${T.t}</text>` : ""}
   </svg>`;
