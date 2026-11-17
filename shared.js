@@ -72,7 +72,7 @@ function postBodyHTML(post) {
   <p style="margin:0 0 14px">오늘의 배지: ${esc(t.badge?.emoji || "")} <b>${esc(t.badge?.name || "")}</b> “${esc(t.badge?.motto || "")}”</p>
   ${post.people.map((p) => `
   <hr style="border:0;border-top:2px dashed #eadfce;margin:18px 0">
-  <h3 style="margin:0 0 4px">✏️ ${esc(p.id)} (${esc(p.role)}) — ${p.medal ? "· " + AWARD_TEXT[p.medal] : ""}${p.award ? " · 🏅 배지" : ""}</h3>
+  <h3 style="margin:0 0 4px">✏️ ${esc(p.id)} (${esc(p.role)})${p.medal ? " — " + AWARD_TEXT[p.medal] : ""}${p.award ? " · 🏅 배지" : ""}</h3>
   <div style="white-space:pre-wrap;background:#fffdf6;border:1px solid #eadfce;border-radius:8px;padding:12px;margin:8px 0">${markUnknown(p.transcript)}</div>
   <p style="margin:6px 0"><b>👩‍🏫 선생님 한마디</b><br>${esc(p.teacher_comment)}</p>
   ${p.praise.length ? `<p style="margin:6px 0 0"><b>👍 잘한 점</b></p>${list(p.praise)}` : ""}
